@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="MyFO.API/MyFO.API.csproj" />
+  <Project Path="MyFO.Application/MyFO.Application.csproj" />
+  <Project Path="MyFO.Domain/MyFO.Domain.csproj" />
+  <Project Path="MyFO.Infrastructure/MyFO.Infrastructure.csproj" />
+</Solution>

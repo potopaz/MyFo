@@ -1,0 +1,23 @@
+tablas de usuarios
+
+a la tabla de ctas bancarias no se si le pondria el banco... 
+
+los campos balance porque son 18,4?
+
+porque no usamos family_id en todas las tablas en vez de tenant_id
+Policies
+
+Categorias... porque le pondriamos el tipo? eso no seria suficiente con q este en la subcategoria que es donde se imputan los movimeintos? para que serviria el orden (sort)?
+
+Centro de costo -> para que se usa el sort_order? creo que con el campo name es suficiente, no se si pondria el description
+
+tarjeta de credito -> el name es suficiente, no se si sacaria el brand y el bank_name, sacaria el closing_Date y el due_date porque no son fijos, como asi tambien el credit limit. Esto lo vamos a llevar x moneda? para simplificarlo?, para q estan los ultimos 4 digitos, entiendo q eso va en los plsticos de los miembros
+
+
+
+currencies por familia habilitadas, es necesario poner decimal_places?
+
+
+subcategoria para que seria el sort? falta centro de costo, ingreso o egreso, si es activo, pasivo (no se si se daria), ingreso o gasto, si es ordinario o extraordinario
+
+Para que sirven los Domain Events

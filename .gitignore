@@ -1,0 +1,39 @@
+# .NET
+bin/
+obj/
+*.user
+*.suo
+.vs/
+*.log
+*.nupkg
+TestResults/
+
+# Secrets & config local
+appsettings.Development.json
+appsettings.Local.json
+*.pfx
+*.p12
+secrets.json
+
+# Frontend
+node_modules/
+dist/
+.env
+.env.local
+.env.*.local
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Riders / VS / VSCode
+.idea/
+.vscode/
+*.swp
+
+# Agent-OS (herramienta interna, no va a producción)
+agent-os/
+
+# Claude Code settings locales
+.claude/
