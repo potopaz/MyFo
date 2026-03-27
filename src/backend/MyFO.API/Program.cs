@@ -1,8 +1,17 @@
 using MyFO.Application;
 using MyFO.Infrastructure;
 using MyFO.API.Middleware;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Trust the reverse proxy (Railway, Vercel, etc.) for X-Forwarded-* headers
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
 
 // --- Register services from each layer ---
 builder.Services.AddApplication();
@@ -33,6 +42,7 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // --- Middleware pipeline ---
+app.UseForwardedHeaders();
 app.UseMiddleware<ExceptionHandlingMiddleware>();
 
 if (app.Environment.IsDevelopment())
