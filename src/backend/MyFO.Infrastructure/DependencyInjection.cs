@@ -134,6 +134,11 @@ public static class DependencyInjection
 
         // --- Email ---
         services.Configure<EmailSettings>(configuration.GetSection("Email"));
+        services.AddHttpClient("Resend", client =>
+        {
+            var apiKey = configuration["Email:ResendApiKey"] ?? string.Empty;
+            client.DefaultRequestHeaders.Add("Authorization", $"Bearer {apiKey}");
+        });
         services.AddScoped<IEmailService, EmailService>();
 
         // --- Application services ---
