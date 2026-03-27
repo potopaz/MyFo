@@ -158,21 +158,18 @@ public class AddStatementPaymentCommandHandler : IRequestHandler<AddStatementPay
 
         var allocations = new List<StatementPaymentAllocation>();
 
-        // Get installments in this period
         var installments = await _db.CreditCardInstallments
             .Where(i => i.FamilyId == familyId
                 && i.StatementPeriodId == period.StatementPeriodId
                 && i.DeletedAt == null)
             .ToListAsync(cancellationToken);
 
-        // Get line items in this period
         var lineItems = await _db.StatementLineItems
             .Where(li => li.FamilyId == familyId
                 && li.StatementPeriodId == period.StatementPeriodId
                 && li.DeletedAt == null)
             .ToListAsync(cancellationToken);
 
-        // Build list of items with their contribution to total
         var items = new List<(Guid? installmentId, Guid? lineItemId, decimal weight)>();
 
         foreach (var inst in installments)
@@ -201,13 +198,9 @@ public class AddStatementPaymentCommandHandler : IRequestHandler<AddStatementPay
             decimal share;
 
             if (i == items.Count - 1)
-            {
                 share = payment.Amount - allocated;
-            }
             else
-            {
                 share = Math.Round(payment.Amount * item.weight / totalWeight, 2);
-            }
 
             allocated += share;
 

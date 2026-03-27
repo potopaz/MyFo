@@ -33,14 +33,6 @@ public class StatementPaymentAllocationConfiguration : IEntityTypeConfiguration<
         builder.Ignore(a => a.DomainEvents);
 
         builder.HasIndex(a => new { a.FamilyId, a.CreditCardPaymentId })
-            .HasDatabaseName("ix_allocations_payment");
-
-        builder.HasIndex(a => new { a.FamilyId, a.CreditCardInstallmentId })
-            .HasDatabaseName("ix_allocations_installment")
-            .HasFilter("credit_card_installment_id IS NOT NULL");
-
-        builder.HasIndex(a => new { a.FamilyId, a.StatementLineItemId })
-            .HasDatabaseName("ix_allocations_line_item")
-            .HasFilter("statement_line_item_id IS NOT NULL");
+            .HasDatabaseName("ix_statement_payment_allocations_payment");
     }
 }

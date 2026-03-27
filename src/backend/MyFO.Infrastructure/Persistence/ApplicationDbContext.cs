@@ -46,7 +46,6 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
     public DbSet<CreditCardPayment> CreditCardPayments => Set<CreditCardPayment>();
     public DbSet<StatementPeriod> StatementPeriods => Set<StatementPeriod>();
     public DbSet<StatementLineItem> StatementLineItems => Set<StatementLineItem>();
-
     public DbSet<StatementPaymentAllocation> StatementPaymentAllocations => Set<StatementPaymentAllocation>();
 
     public ApplicationDbContext(

@@ -11,7 +11,7 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-
+  useSidebar,
 } from '@/components/ui/sidebar'
 import {
   CircleDollarSign,
@@ -40,6 +40,7 @@ export function AppSidebar() {
   const location = useLocation()
   const { t } = useTranslation()
   const { isFamilyAdmin } = useAuth()
+  const { isMobile, setOpenMobile } = useSidebar()
 
   const operationsItems: MenuItem[] = [
     { title: t('nav.frequentMovements'), url: '/frequent-movements', icon: RefreshCw },
@@ -69,11 +70,15 @@ export function AppSidebar() {
   const isActive = (url: string) =>
     url === '/' ? location.pathname === '/' : location.pathname.startsWith(url)
 
+  const handleNavClick = () => {
+    if (isMobile) setOpenMobile(false)
+  }
+
   const renderMenu = (items: MenuItem[]) => (
     <SidebarMenu className="gap-0.5">
       {items.map((item) => (
         <SidebarMenuItem key={item.url}>
-          <SidebarMenuButton render={<Link to={item.url} />} isActive={isActive(item.url)}>
+          <SidebarMenuButton render={<Link to={item.url} onClick={handleNavClick} />} isActive={isActive(item.url)}>
             <item.icon className="size-4" />
             <span>{item.title}</span>
           </SidebarMenuButton>
@@ -85,7 +90,7 @@ export function AppSidebar() {
   return (
     <Sidebar>
       <SidebarHeader className="p-4 pb-2">
-        <Link to="/" className="flex items-center gap-2.5">
+        <Link to="/" onClick={handleNavClick} className="flex items-center gap-2.5">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/20">
             <Landmark className="h-4.5 w-4.5" />
           </div>
