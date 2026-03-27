@@ -96,6 +96,41 @@ Detailed rules are in root-level files:
 
 Domain specs live in `documentation/domains/{domain}/functional-spec.md`.
 
+## Deployment
+
+### Infraestructura de producción
+- **Backend**: Railway (Dockerfile builder, root dir `src/backend`)
+- **Frontend**: Vercel (root dir `src/frontend`, build command `npm run build`, output `dist`)
+- **Base de datos**: Railway PostgreSQL (variables `PG*` se inyectan automáticamente en el backend)
+- **Email**: Resend API (dominio `nexpen.com.ar` verificado, sender `no-reply@nexpen.com.ar`)
+
+### Variables de entorno en Railway (backend)
+- `Jwt__Secret` — clave JWT (usar `__` para config anidada)
+- `App__FrontendUrl` — URL de Vercel (para CORS)
+- `Email__ResendApiKey` — API key de Resend
+- `Email__SenderEmail` — `no-reply@nexpen.com.ar`
+- Las variables de BD (`PGHOST`, `PGPORT`, etc.) las inyecta Railway automáticamente
+
+### Variables de entorno en Vercel (frontend)
+- `VITE_API_URL` — URL del backend Railway + `/api` (ej: `https://myfo-production.up.railway.app/api`)
+
+### Checklist antes de pushear a producción
+1. Correr `npm run build` en `src/frontend` — debe compilar sin errores
+2. Correr `dotnet build MyFO.slnx` en `src/backend` — debe compilar sin errores
+3. Verificar que no hay secrets en archivos commiteados (`appsettings.Development.json` está en .gitignore)
+
+### Reglas de código frontend para evitar errores de build
+- **Base UI usa `render` prop, NO `asChild`**: `<TooltipTrigger render={<Button />}>` en vez de `<TooltipTrigger asChild><Button /></TooltipTrigger>`
+- **useRef siempre con valor inicial**: `useRef<T | undefined>(undefined)` nunca `useRef<T>()`
+- **Funciones que retornan null**: declarar tipo explícito `function Foo(): null`
+- **No dejar archivos sin usar**: archivos `.tsx` en `src/` se compilan aunque no estén en las rutas
+- **Select onValueChange**: siempre usar `(val) => val && setState(val)` para evitar asignación de string vacío
+- **AmountInput props**: usa `maxDecimals` (no `decimalPlaces`), y `value` es `string` (no `number`)
+
+### Google Translate / extensiones de browser
+El HTML tiene `translate="no"` para evitar que Google Translate modifique el DOM y rompa React.
+No remover ese atributo.
+
 ## Database
 
 PostgreSQL 18 (local, no Docker). Two users:
