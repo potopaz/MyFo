@@ -8,6 +8,19 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddApplication();
 builder.Services.AddInfrastructure(builder.Configuration);
 
+// --- CORS ---
+var frontendUrl = builder.Configuration["App:FrontendUrl"] ?? "http://localhost:3000";
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(frontendUrl)
+              .AllowAnyHeader()
+              .AllowAnyMethod()
+              .AllowCredentials();
+    });
+});
+
 // --- API services ---
 builder.Services.AddControllers()
     .AddJsonOptions(options =>
@@ -29,6 +42,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // app.UseHttpsRedirection(); // Not needed for local HTTP-only development
+app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
