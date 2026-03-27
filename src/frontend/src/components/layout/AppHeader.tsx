@@ -54,16 +54,7 @@ export function AppHeader() {
 
       {/* Notification bell */}
       <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="relative h-8 w-8 text-muted-foreground hover:text-foreground">
-            <Bell className="h-4.5 w-4.5" />
-            {unreadCount > 0 && (
-              <span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white leading-none">
-                {unreadCount > 9 ? '9+' : unreadCount}
-              </span>
-            )}
-          </Button>
-        </DropdownMenuTrigger>
+        <DropdownMenuTrigger render={<Button variant="ghost" size="icon" className="relative h-8 w-8 text-muted-foreground hover:text-foreground"><Bell className="h-4.5 w-4.5" />{unreadCount > 0 && (<span className="absolute -right-1 -top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white leading-none">{unreadCount > 9 ? '9+' : unreadCount}</span>)}</Button>} />
         <DropdownMenuContent align="end" className="w-80">
           <div className="flex items-center justify-between px-3 py-2">
             <span className="text-sm font-semibold">{t('notifications.title')}</span>

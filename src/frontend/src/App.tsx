@@ -71,12 +71,6 @@ function FamilyAdminRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function AdminRoute({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated, isSuperAdmin } = useAuth()
-  if (!isAuthenticated) return <Navigate to="/auth" replace />
-  if (!isSuperAdmin) return <Navigate to="/" replace />
-  return <>{children}</>
-}
 
 export default function App() {
   return (

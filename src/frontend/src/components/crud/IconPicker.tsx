@@ -16,7 +16,7 @@ import {
   Landmark, Store, Package, Truck, MapPin, Globe,
   Calendar, Clock, AlertTriangle, Star, Zap,
   // Additional icons
-  Trophy, Medal, Volleyball, Dumbbell as Dumbbell2,
+  Trophy, Medal, Volleyball,
   Armchair, Sofa, Bath, WashingMachine, Refrigerator,
   Paintbrush, PaintBucket, Ruler, Plug, Fan,
   Cat, Fish, Bug, Bird, Leaf,
@@ -25,7 +25,7 @@ import {
   Syringe, Thermometer, Ambulance,
   School, Library, PenLine, Languages,
   Handshake, HeartHandshake, PartyPopper, Cake,
-  BabyIcon, Glasses, Watch, Gem, Crown,
+  Glasses, Watch, Gem, Crown,
   type LucideIcon,
 } from 'lucide-react'
 

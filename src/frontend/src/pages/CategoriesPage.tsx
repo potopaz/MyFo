@@ -447,7 +447,7 @@ export default function CategoriesPage() {
                 <Label>{t('categories.fields.parentCategory')}</Label>
                 <Select
                   value={subForm.newCategoryId}
-                  onValueChange={(v) => setSubForm((p) => ({ ...p, newCategoryId: v }))}
+                  onValueChange={(v) => setSubForm((p) => ({ ...p, newCategoryId: v ?? p.newCategoryId }))}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue>
@@ -475,7 +475,7 @@ export default function CategoriesPage() {
               <Label>{t('categories.fields.type')}</Label>
               <Select
                 value={subForm.subcategoryType}
-                onValueChange={(v) => setSubForm((p) => ({ ...p, subcategoryType: v }))}
+                onValueChange={(v) => setSubForm((p) => ({ ...p, subcategoryType: v ?? p.subcategoryType }))}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder={t('categories.fields.selectType')}>
@@ -497,7 +497,7 @@ export default function CategoriesPage() {
               <Label>{t('categories.fields.accountingType')}</Label>
               <Select
                 value={subForm.suggestedAccountingType || '_none_'}
-                onValueChange={(v) => setSubForm((p) => ({ ...p, suggestedAccountingType: v === '_none_' ? '' : v }))}
+                onValueChange={(v) => setSubForm((p) => ({ ...p, suggestedAccountingType: v == null ? p.suggestedAccountingType : v === '_none_' ? '' : v }))}
               >
                 <SelectTrigger className="w-full">
                   <SelectValue className={!subForm.suggestedAccountingType ? 'text-muted-foreground' : ''} placeholder={t('categories.fields.noSuggestion')}>

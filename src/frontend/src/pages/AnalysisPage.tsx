@@ -221,7 +221,7 @@ export default function AnalysisPage() {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">Análisis por período</h1>
         <div className="flex items-center gap-2">
-          <Select value={currency} onValueChange={setCurrency}>
+          <Select value={currency} onValueChange={(val) => val && setCurrency(val)}>
             <SelectTrigger className="w-36 h-8 text-sm">
               <SelectValue>{currency}</SelectValue>
             </SelectTrigger>
@@ -231,7 +231,7 @@ export default function AnalysisPage() {
               ))}
             </SelectContent>
           </Select>
-          <Select value={period} onValueChange={setPeriod}>
+          <Select value={period} onValueChange={(val) => val && setPeriod(val)}>
             <SelectTrigger className="w-44 h-8 text-sm">
               <SelectValue>{PERIOD_LABELS[period]}</SelectValue>
             </SelectTrigger>
