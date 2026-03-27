@@ -67,12 +67,6 @@ function formatAmount(amount: number): string {
   return amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
 }
 
-function formatDateTime(isoString: string): string {
-  const d = new Date(isoString)
-  const date = `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`
-  const time = `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-  return `${date} ${time}`
-}
 
 function getAccountName(item: TransferListItemDto, side: 'from' | 'to'): string {
   if (side === 'from') return item.fromCashBoxName ?? item.fromBankAccountName ?? '—'
@@ -241,7 +235,7 @@ export default function TransfersPage() {
           </div>
           <div className="flex flex-col gap-1">
             <Label className="text-xs">{t('transfers.filterStatus')}</Label>
-            <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <Select value={filterStatus} onValueChange={(val) => val && setFilterStatus(val)}>
               <SelectTrigger className="h-8 w-44">
                 <SelectValue>
                   {filterStatus === 'all' ? t('transfers.status.all')
@@ -300,7 +294,7 @@ export default function TransfersPage() {
                     <StatusBadge status={item.status} isAutoConfirmed={item.isAutoConfirmed} />
                     {item.status === 'Rejected' && item.rejectionComment && (
                       <Tooltip>
-                        <TooltipTrigger asChild>
+                        <TooltipTrigger>
                           <Info className="inline ml-1 h-3 w-3 text-muted-foreground cursor-help" />
                         </TooltipTrigger>
                         <TooltipContent>{item.rejectionComment}</TooltipContent>
@@ -313,14 +307,7 @@ export default function TransfersPage() {
                       {/* Confirm (only PendingConfirmation, not creator) */}
                       {item.status === 'PendingConfirmation' && item.creatorUserId !== currentUserId && (
                         <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost" size="icon" className="h-7 w-7 text-green-600 hover:text-green-600"
-                              onClick={() => handleConfirm(item.transferId)}
-                            >
-                              <CheckCircle className="h-3.5 w-3.5" />
-                            </Button>
-                          </TooltipTrigger>
+                          <TooltipTrigger render={<Button variant="ghost" size="icon" className="h-7 w-7 text-green-600 hover:text-green-600" onClick={() => handleConfirm(item.transferId)}><CheckCircle className="h-3.5 w-3.5" /></Button>} />
                           <TooltipContent>{t('transfers.confirm')}</TooltipContent>
                         </Tooltip>
                       )}
@@ -328,14 +315,7 @@ export default function TransfersPage() {
                       {/* Reject (only PendingConfirmation, not creator) */}
                       {item.status === 'PendingConfirmation' && item.creatorUserId !== currentUserId && (
                         <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive"
-                              onClick={() => setRejectId(item.transferId)}
-                            >
-                              <XCircle className="h-3.5 w-3.5" />
-                            </Button>
-                          </TooltipTrigger>
+                          <TooltipTrigger render={<Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive" onClick={() => setRejectId(item.transferId)}><XCircle className="h-3.5 w-3.5" /></Button>} />
                           <TooltipContent>{t('transfers.reject')}</TooltipContent>
                         </Tooltip>
                       )}

@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useSearchParams } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import api from '@/lib/api'
 import { Button } from '@/components/ui/button'
@@ -8,6 +8,7 @@ import { Check, Loader2 } from 'lucide-react'
 
 export default function AuthVerifyPage() {
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const token = searchParams.get('token')
 
@@ -70,10 +71,8 @@ export default function AuthVerifyPage() {
               <p className="text-sm text-muted-foreground">
                 {t('auth.verify.successMessage', 'Tu cuenta fue creada exitosamente.')}
               </p>
-              <Button asChild className="w-full">
-                <Link to="/auth">
-                  {t('auth.verify.login', 'Iniciar sesion')}
-                </Link>
+              <Button className="w-full" onClick={() => navigate('/auth')}>
+                {t('auth.verify.login', 'Iniciar sesion')}
               </Button>
             </>
           )}

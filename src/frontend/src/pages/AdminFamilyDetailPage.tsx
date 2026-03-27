@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { useParams, Link } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
 import { ArrowLeft } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -29,6 +29,7 @@ function fmtDate(iso: string) {
 export default function AdminFamilyDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { t } = useTranslation()
+  const navigate = useNavigate()
   const [family, setFamily] = useState<AdminFamilyDetailDto | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
@@ -76,8 +77,8 @@ export default function AdminFamilyDetailPage() {
   return (
     <div className="space-y-6 max-w-2xl">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" size="icon-sm" asChild>
-          <Link to="/admin/families"><ArrowLeft className="size-4" /></Link>
+        <Button variant="ghost" size="icon-sm" onClick={() => navigate('/admin/families')}>
+          <ArrowLeft className="size-4" />
         </Button>
         <h1 className="text-2xl font-semibold">{family.name}</h1>
         <Badge variant={form.isEnabled ? 'default' : 'destructive'}>

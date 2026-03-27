@@ -663,7 +663,7 @@ export default function TransferFormPage() {
               {fromCurrencyCode && showBimonetary && (
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger asChild>
+                    <TooltipTrigger>
                       <Info className="h-3.5 w-3.5 text-muted-foreground cursor-default shrink-0" />
                     </TooltipTrigger>
                     <TooltipContent side="top">
@@ -726,7 +726,7 @@ export default function TransferFormPage() {
               {toCurrencyCode && showBimonetary && (
                 <TooltipProvider>
                   <Tooltip>
-                    <TooltipTrigger asChild>
+                    <TooltipTrigger>
                       <Info className="h-3.5 w-3.5 text-muted-foreground cursor-default shrink-0" />
                     </TooltipTrigger>
                     <TooltipContent side="top">
