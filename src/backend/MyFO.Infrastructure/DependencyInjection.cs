@@ -153,6 +153,9 @@ public static class DependencyInjection
         // --- Exchange rate service ---
         services.AddHttpClient<IExchangeRateService, ExchangeRateService>();
 
+        // --- SuperAdmin seeder ---
+        services.AddHostedService<SuperAdminSeeder>();
+
         return services;
     }
 }
