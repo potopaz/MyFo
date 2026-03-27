@@ -1,4 +1,3 @@
-using System.Text.Json;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using MyFO.Application.Common.Interfaces;
@@ -13,11 +12,13 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
 {
     private readonly IApplicationDbContext _db;
     private readonly ICurrentUserService _currentUser;
+    private readonly IExchangeRateService _exchangeRateService;
 
-    public GetDashboardSummaryQueryHandler(IApplicationDbContext db, ICurrentUserService currentUser)
+    public GetDashboardSummaryQueryHandler(IApplicationDbContext db, ICurrentUserService currentUser, IExchangeRateService exchangeRateService)
     {
         _db = db;
         _currentUser = currentUser;
+        _exchangeRateService = exchangeRateService;
     }
 
     public async Task<DashboardSummaryDto> Handle(GetDashboardSummaryQuery request, CancellationToken cancellationToken)
@@ -34,19 +35,25 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
 
         // ── Patrimony ────────────────────────────────────────────────────────────
 
-        // Load snapshots once for conversion
-        var snapshots = await _db.ExchangeRateSnapshots
-            .OrderByDescending(s => s.TargetDate)
-            .ToListAsync(cancellationToken);
-
         var cashBoxes = await _db.CashBoxes.ToListAsync(cancellationToken);
         var bankAccounts = await _db.BankAccounts.ToListAsync(cancellationToken);
 
+        // Fetch rates for each unique foreign currency (uses API + cache)
+        var allCurrencies = cashBoxes.Select(c => c.CurrencyCode)
+            .Concat(bankAccounts.Select(b => b.CurrencyCode))
+            .Distinct()
+            .Where(c => c != request.Currency)
+            .ToList();
+
+        var rates = new Dictionary<string, decimal?>();
+        foreach (var cur in allCurrencies)
+            rates[cur] = await _exchangeRateService.GetRateAsync(cur, request.Currency, today, cancellationToken);
+
         decimal currentPatrimony = 0m;
         foreach (var cb in cashBoxes)
-            currentPatrimony += ConvertBalance(cb.Balance, cb.CurrencyCode, request.Currency, snapshots);
+            currentPatrimony += ConvertBalance(cb.Balance, cb.CurrencyCode, request.Currency, rates);
         foreach (var ba in bankAccounts)
-            currentPatrimony += ConvertBalance(ba.Balance, ba.CurrencyCode, request.Currency, snapshots);
+            currentPatrimony += ConvertBalance(ba.Balance, ba.CurrencyCode, request.Currency, rates);
 
         // ── Monthly flow (last 6 months) ─────────────────────────────────────────
 
@@ -142,50 +149,15 @@ public class GetDashboardSummaryQueryHandler : IRequestHandler<GetDashboardSumma
         };
     }
 
-    /// <summary>
-    /// Converts a balance from sourceCurrency to targetCurrency using the most recent snapshot.
-    /// Returns 0 if no conversion rate is available (never blocks the dashboard).
-    /// </summary>
     private static decimal ConvertBalance(
         decimal balance,
         string sourceCurrency,
         string targetCurrency,
-        List<Domain.Common.ExchangeRateSnapshot> snapshots)
+        Dictionary<string, decimal?> rates)
     {
         if (sourceCurrency == targetCurrency) return balance;
         if (balance == 0m) return 0m;
-
-        // Try: snapshot with BaseCurrency = sourceCurrency, extract rate for targetCurrency
-        var snap = snapshots.FirstOrDefault(s => s.BaseCurrency == sourceCurrency);
-        if (snap is not null)
-        {
-            var rate = ExtractRate(snap.RatesJson, targetCurrency);
-            if (rate.HasValue) return balance * rate.Value;
-        }
-
-        // Try inverse: snapshot with BaseCurrency = targetCurrency, extract rate for sourceCurrency
-        var snapInverse = snapshots.FirstOrDefault(s => s.BaseCurrency == targetCurrency);
-        if (snapInverse is not null)
-        {
-            var rateInverse = ExtractRate(snapInverse.RatesJson, sourceCurrency);
-            if (rateInverse.HasValue && rateInverse.Value != 0m)
-                return balance / rateInverse.Value;
-        }
-
-        // No rate available — contribute 0
-        return 0m;
-    }
-
-    private static decimal? ExtractRate(string ratesJson, string currencyCode)
-    {
-        try
-        {
-            var dict = JsonSerializer.Deserialize<Dictionary<string, decimal>>(ratesJson);
-            return dict is not null && dict.TryGetValue(currencyCode, out var rate) ? rate : null;
-        }
-        catch
-        {
-            return null;
-        }
+        var rate = rates.GetValueOrDefault(sourceCurrency);
+        return rate.HasValue ? balance * rate.Value : 0m;
     }
 }
