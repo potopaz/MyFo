@@ -8,26 +8,23 @@ namespace MyFO.Application.Admin.Queries;
 
 public class GetAdminFamilyDetailQueryHandler : IRequestHandler<GetAdminFamilyDetailQuery, AdminFamilyDetailDto>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IAdminDbContext _db;
 
-    public GetAdminFamilyDetailQueryHandler(IApplicationDbContext db) => _db = db;
+    public GetAdminFamilyDetailQueryHandler(IAdminDbContext db) => _db = db;
 
     public async Task<AdminFamilyDetailDto> Handle(GetAdminFamilyDetailQuery request, CancellationToken cancellationToken)
     {
         var family = await _db.Families
-            .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(f => f.FamilyId == request.FamilyId && f.DeletedAt == null, cancellationToken);
+                        .FirstOrDefaultAsync(f => f.FamilyId == request.FamilyId && f.DeletedAt == null, cancellationToken);
 
         if (family is null)
             throw new NotFoundException("Family", request.FamilyId);
 
         var config = await _db.FamilyAdminConfigs
-            .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(c => c.FamilyId == request.FamilyId && c.DeletedAt == null, cancellationToken);
+                        .FirstOrDefaultAsync(c => c.FamilyId == request.FamilyId && c.DeletedAt == null, cancellationToken);
 
         var members = await _db.FamilyMembers
-            .IgnoreQueryFilters()
-            .Where(m => m.FamilyId == request.FamilyId && m.DeletedAt == null)
+                        .Where(m => m.FamilyId == request.FamilyId && m.DeletedAt == null)
             .ToListAsync(cancellationToken);
 
         return new AdminFamilyDetailDto

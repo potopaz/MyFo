@@ -7,28 +7,25 @@ namespace MyFO.Application.Admin.Queries;
 
 public class GetAdminFamiliesQueryHandler : IRequestHandler<GetAdminFamiliesQuery, List<AdminFamilyListItemDto>>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IAdminDbContext _db;
 
-    public GetAdminFamiliesQueryHandler(IApplicationDbContext db) => _db = db;
+    public GetAdminFamiliesQueryHandler(IAdminDbContext db) => _db = db;
 
     public async Task<List<AdminFamilyListItemDto>> Handle(GetAdminFamiliesQuery request, CancellationToken cancellationToken)
     {
         var families = await _db.Families
-            .IgnoreQueryFilters()
-            .Where(f => f.DeletedAt == null)
+                        .Where(f => f.DeletedAt == null)
             .OrderBy(f => f.Name)
             .ToListAsync(cancellationToken);
 
         var familyIds = families.Select(f => f.FamilyId).ToList();
 
         var configs = await _db.FamilyAdminConfigs
-            .IgnoreQueryFilters()
-            .Where(c => familyIds.Contains(c.FamilyId) && c.DeletedAt == null)
+                        .Where(c => familyIds.Contains(c.FamilyId) && c.DeletedAt == null)
             .ToListAsync(cancellationToken);
 
         var memberCounts = await _db.FamilyMembers
-            .IgnoreQueryFilters()
-            .Where(m => familyIds.Contains(m.FamilyId) && m.DeletedAt == null && m.IsActive)
+                        .Where(m => familyIds.Contains(m.FamilyId) && m.DeletedAt == null && m.IsActive)
             .GroupBy(m => m.FamilyId)
             .Select(g => new { FamilyId = g.Key, Count = g.Count() })
             .ToListAsync(cancellationToken);

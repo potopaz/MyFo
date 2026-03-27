@@ -10,10 +10,10 @@ namespace MyFO.Application.Admin.Commands;
 
 public class UpdateFamilyAdminConfigCommandHandler : IRequestHandler<UpdateFamilyAdminConfigCommand, AdminFamilyDetailDto>
 {
-    private readonly IApplicationDbContext _db;
+    private readonly IAdminDbContext _db;
     private readonly IMediator _mediator;
 
-    public UpdateFamilyAdminConfigCommandHandler(IApplicationDbContext db, IMediator mediator)
+    public UpdateFamilyAdminConfigCommandHandler(IAdminDbContext db, IMediator mediator)
     {
         _db = db;
         _mediator = mediator;
@@ -22,15 +22,13 @@ public class UpdateFamilyAdminConfigCommandHandler : IRequestHandler<UpdateFamil
     public async Task<AdminFamilyDetailDto> Handle(UpdateFamilyAdminConfigCommand request, CancellationToken cancellationToken)
     {
         var familyExists = await _db.Families
-            .IgnoreQueryFilters()
-            .AnyAsync(f => f.FamilyId == request.FamilyId && f.DeletedAt == null, cancellationToken);
+                        .AnyAsync(f => f.FamilyId == request.FamilyId && f.DeletedAt == null, cancellationToken);
 
         if (!familyExists)
             throw new NotFoundException("Family", request.FamilyId);
 
         var config = await _db.FamilyAdminConfigs
-            .IgnoreQueryFilters()
-            .FirstOrDefaultAsync(c => c.FamilyId == request.FamilyId && c.DeletedAt == null, cancellationToken);
+                        .FirstOrDefaultAsync(c => c.FamilyId == request.FamilyId && c.DeletedAt == null, cancellationToken);
 
         if (config is null)
         {

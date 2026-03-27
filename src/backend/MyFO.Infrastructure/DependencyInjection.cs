@@ -143,6 +143,15 @@ public static class DependencyInjection
 
         // --- Application services ---
         services.AddScoped<IApplicationDbContext>(sp => sp.GetRequiredService<ApplicationDbContext>());
+
+        // Admin DbContext: uses DefaultConnection (postgres superuser) — bypasses RLS
+        services.AddDbContext<AdminDbContext>(options =>
+        {
+            var connectionString = configuration.GetConnectionString("DefaultConnection")
+                                ?? configuration.GetConnectionString("AppConnection");
+            options.UseNpgsql(connectionString);
+        });
+        services.AddScoped<IAdminDbContext>(sp => sp.GetRequiredService<AdminDbContext>());
         services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IVerificationTokenService, VerificationTokenService>();
