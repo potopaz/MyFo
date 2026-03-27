@@ -97,7 +97,8 @@ export default function AuthEntryPage() {
   }
 
   const handleSocialLogin = (provider: string) => {
-    window.location.href = `/api/auth/external-login?provider=${provider}`
+    const apiUrl = import.meta.env.VITE_API_URL ?? '/api'
+    window.location.href = `${apiUrl}/auth/external-login?provider=${provider}`
   }
 
   return (
