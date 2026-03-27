@@ -76,125 +76,129 @@ export default function AdminFamilyDetailPage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
+
+      {/* Header */}
       <div className="flex items-center gap-3">
         <Button variant="ghost" size="icon-sm" onClick={() => navigate('/admin/families')}>
           <ArrowLeft className="size-4" />
         </Button>
-        <h1 className="text-2xl font-semibold">{family.name}</h1>
+        <h1 className="text-2xl font-bold">{family.name}</h1>
         <Badge variant={form.isEnabled ? 'default' : 'destructive'}>
           {form.isEnabled ? t('admin.enabled') : t('admin.disabled')}
         </Badge>
       </div>
 
-      {/* Detalle + Configuración unificados */}
+      {/* Info de la familia (solo lectura) */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">{t('admin.familyDetail')}</CardTitle>
+          <CardTitle className="text-lg">{t('admin.familyDetail')}</CardTitle>
+        </CardHeader>
+        <CardContent className="grid grid-cols-2 gap-x-8 gap-y-4 text-sm">
+          <div className="space-y-1">
+            <p className="text-muted-foreground">Moneda principal</p>
+            <p className="font-medium">{family.primaryCurrencyCode}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-muted-foreground">Moneda secundaria</p>
+            <p className="font-medium">{family.secondaryCurrencyCode || '—'}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-muted-foreground">Idioma</p>
+            <p className="font-medium">{LANGUAGE_LABELS[family.language] ?? family.language}</p>
+          </div>
+          <div className="space-y-1">
+            <p className="text-muted-foreground">Creada el</p>
+            <p className="font-medium">{fmtDate(family.createdAt)}</p>
+          </div>
+          {family.disabledAt && (
+            <div className="space-y-1">
+              <p className="text-muted-foreground">{t('admin.disabledAt')}</p>
+              <p className="font-medium">{fmtDate(family.disabledAt)}</p>
+            </div>
+          )}
+          {family.disabledReason && (
+            <div className="col-span-2 space-y-1">
+              <p className="text-muted-foreground">{t('admin.disabledReason')}</p>
+              <p className="font-medium">{family.disabledReason}</p>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Configuración editable */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">{t('admin.configSection')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Info de la familia (solo lectura) */}
-          <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-sm">
-            <div>
-              <span className="text-muted-foreground">Moneda principal</span>
-              <p className="font-medium">{family.primaryCurrencyCode}</p>
+          <div className="flex items-center gap-6">
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="isEnabled"
+                checked={form.isEnabled}
+                onCheckedChange={(v) => setForm((p) => ({ ...p, isEnabled: !!v }))}
+              />
+              <Label htmlFor="isEnabled">{t('admin.isEnabled')}</Label>
             </div>
-            <div>
-              <span className="text-muted-foreground">Moneda secundaria</span>
-              <p className="font-medium">{family.secondaryCurrencyCode}</p>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Idioma</span>
-              <p className="font-medium">{LANGUAGE_LABELS[family.language] ?? family.language}</p>
-            </div>
-            <div>
-              <span className="text-muted-foreground">Creada el</span>
-              <p className="font-medium">{fmtDate(family.createdAt)}</p>
-            </div>
-            {family.disabledAt && (
-              <div>
-                <span className="text-muted-foreground">{t('admin.disabledAt')}</span>
-                <p className="font-medium">{fmtDate(family.disabledAt)}</p>
+            <div className="h-4 w-px bg-border" />
+            <div className="flex items-center gap-2">
+              <Label htmlFor="maxMembers" className="text-muted-foreground whitespace-nowrap">
+                {t('admin.maxMembers')}
+              </Label>
+              <div className="w-14 shrink-0">
+                <Input
+                  id="maxMembers"
+                  value={form.maxMembers}
+                  onChange={(e) => {
+                    const v = e.target.value
+                    if (/^\d*$/.test(v)) setForm((p) => ({ ...p, maxMembers: v }))
+                  }}
+                  inputMode="numeric"
+                  placeholder="—"
+                  className="h-7 text-sm"
+                />
               </div>
-            )}
-            {family.disabledReason && (
-              <div className="col-span-2">
-                <span className="text-muted-foreground">{t('admin.disabledReason')}</span>
-                <p className="font-medium">{family.disabledReason}</p>
-              </div>
-            )}
+            </div>
           </div>
 
-          <div className="border-t pt-4 space-y-4">
-            {/* Habilitación + Máx. miembros en la misma fila */}
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                <Checkbox
-                  id="isEnabled"
-                  checked={form.isEnabled}
-                  onCheckedChange={(v) => setForm((p) => ({ ...p, isEnabled: !!v }))}
-                />
-                <Label htmlFor="isEnabled">{t('admin.isEnabled')}</Label>
-              </div>
-              <div className="h-4 w-px bg-border" />
-              <div className="flex items-center gap-2">
-                <Label htmlFor="maxMembers" className="text-muted-foreground whitespace-nowrap">
-                  {t('admin.maxMembers')}
-                </Label>
-                <div className="w-14 shrink-0">
-                  <Input
-                    id="maxMembers"
-                    value={form.maxMembers}
-                    onChange={(e) => {
-                      const v = e.target.value
-                      if (/^\d*$/.test(v)) setForm((p) => ({ ...p, maxMembers: v }))
-                    }}
-                    inputMode="numeric"
-                    placeholder="—"
-                    className="h-7 text-sm"
-                  />
-                </div>
-              </div>
-            </div>
-
-            {!form.isEnabled && (
-              <div className="space-y-1">
-                <Label htmlFor="disabledReason">{t('admin.disabledReasonLabel')}</Label>
-                <Input
-                  id="disabledReason"
-                  value={form.disabledReason}
-                  onChange={(e) => setForm((p) => ({ ...p, disabledReason: e.target.value }))}
-                  placeholder={t('admin.disabledReasonPlaceholder')}
-                  maxLength={200}
-                />
-              </div>
-            )}
-
-            <div className="space-y-1">
-              <Label htmlFor="notes">{t('admin.notes')}</Label>
-              <textarea
-                id="notes"
-                value={form.notes}
-                onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
-                placeholder={t('admin.notesPlaceholder')}
-                maxLength={500}
-                rows={3}
-                className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+          {!form.isEnabled && (
+            <div className="space-y-1.5">
+              <Label htmlFor="disabledReason">{t('admin.disabledReasonLabel')}</Label>
+              <Input
+                id="disabledReason"
+                value={form.disabledReason}
+                onChange={(e) => setForm((p) => ({ ...p, disabledReason: e.target.value }))}
+                placeholder={t('admin.disabledReasonPlaceholder')}
+                maxLength={200}
               />
             </div>
+          )}
 
-            <div className="flex justify-end">
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? t('admin.saving') : t('admin.save')}
-              </Button>
-            </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="notes">{t('admin.notes')}</Label>
+            <textarea
+              id="notes"
+              value={form.notes}
+              onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
+              placeholder={t('admin.notesPlaceholder')}
+              maxLength={500}
+              rows={3}
+              className="flex min-h-[80px] w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+            />
           </div>
         </CardContent>
       </Card>
 
+      <div className="flex justify-end">
+        <Button onClick={handleSave} disabled={saving}>
+          {saving ? t('admin.saving') : t('admin.save')}
+        </Button>
+      </div>
+
       {/* Miembros */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">
+          <CardTitle className="text-lg">
             {t('admin.membersSection')}
             <span className="ml-2 text-sm font-normal text-muted-foreground">
               {family.memberCount} {family.memberCount === 1 ? 'activo' : 'activos'}
@@ -205,17 +209,17 @@ export default function AdminFamilyDetailPage() {
           <table className="w-full text-sm">
             <thead className="border-b bg-muted/40">
               <tr>
-                <th className="px-2 h-10 text-left align-middle font-medium">{t('admin.memberName')}</th>
-                <th className="px-2 h-10 text-left align-middle font-medium">{t('admin.memberRole')}</th>
-                <th className="px-2 h-10 text-left align-middle font-medium">{t('admin.memberStatus')}</th>
+                <th className="px-4 h-10 text-left align-middle font-medium">{t('admin.memberName')}</th>
+                <th className="px-4 h-10 text-left align-middle font-medium">{t('admin.memberRole')}</th>
+                <th className="px-4 h-10 text-left align-middle font-medium">{t('admin.memberStatus')}</th>
               </tr>
             </thead>
             <tbody>
               {family.members.map((m) => (
                 <tr key={m.memberId} className="border-b last:border-0 hover:bg-muted/50 transition-colors">
-                  <td className="px-2 h-10 align-middle font-medium">{m.displayName}</td>
-                  <td className="px-2 h-10 align-middle text-muted-foreground">{m.role}</td>
-                  <td className="px-2 h-10 align-middle">
+                  <td className="px-4 h-10 align-middle font-medium">{m.displayName}</td>
+                  <td className="px-4 h-10 align-middle text-muted-foreground">{m.role}</td>
+                  <td className="px-4 h-10 align-middle">
                     <Badge variant={m.isActive ? 'default' : 'secondary'}>
                       {m.isActive ? t('common.active') : t('common.inactive')}
                     </Badge>
@@ -226,6 +230,7 @@ export default function AdminFamilyDetailPage() {
           </table>
         </CardContent>
       </Card>
+
     </div>
   )
 }
