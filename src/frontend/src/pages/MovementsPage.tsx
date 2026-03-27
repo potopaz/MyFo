@@ -67,7 +67,7 @@ export default function MovementsPage() {
   const [filterType, setFilterType] = useState('_all_')
   const [filterDescription, setFilterDescription] = useState('')
   const [descriptionInput, setDescriptionInput] = useState('')
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>()
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const [deleteId, setDeleteId] = useState<string | null>(null)
 

@@ -81,7 +81,7 @@ export default function StatementPeriodFormPage() {
   const [editDueDate, setEditDueDate] = useState('')
 
   const [lineItemOpen, setLineItemOpen] = useState(false)
-  const [lineItemForm, setLineItemForm] = useState({ lineType: 'Charge', description: '', amount: 0 })
+  const [lineItemForm, setLineItemForm] = useState({ lineType: 'Charge', description: '', amount: '' })
   const [savingLineItem, setSavingLineItem] = useState(false)
 
   const [deleteLineItemId, setDeleteLineItemId] = useState<string | null>(null)
@@ -189,10 +189,10 @@ export default function StatementPeriodFormPage() {
   const addLineItem = async () => {
     if (!detail) return
     if (!lineItemForm.description.trim()) { toast.error(t('statements.toast.descriptionRequired')); return }
-    if (lineItemForm.amount <= 0) { toast.error(t('statements.toast.amountRequired')); return }
+    if (!lineItemForm.amount || parseFloat(lineItemForm.amount) <= 0) { toast.error(t('statements.toast.amountRequired')); return }
     setSavingLineItem(true)
     try {
-      await api.post(`/statementperiods/${detail.statementPeriodId}/line-items`, lineItemForm)
+      await api.post(`/statementperiods/${detail.statementPeriodId}/line-items`, { ...lineItemForm, amount: parseFloat(lineItemForm.amount) })
       toast.success(t('statements.toast.lineItemAdded'))
       setLineItemOpen(false)
       loadDetail(detail.statementPeriodId)
@@ -489,7 +489,7 @@ export default function StatementPeriodFormPage() {
             <h3 className="text-sm font-semibold">{t('statements.lineItems')}</h3>
             {periodIsOpen && (
               <Button size="sm" variant="outline" onClick={() => {
-                setLineItemForm({ lineType: 'Charge', description: '', amount: 0 })
+                setLineItemForm({ lineType: 'Charge', description: '', amount: '' })
                 setLineItemOpen(true)
               }}>
                 <Plus className="mr-1 h-3 w-3" /> {t('statements.addLineItem')}
@@ -559,7 +559,7 @@ export default function StatementPeriodFormPage() {
               <AmountInput
                 value={lineItemForm.amount}
                 onChange={(v) => setLineItemForm((p) => ({ ...p, amount: v }))}
-                decimalPlaces={2}
+                maxDecimals={2}
               />
             </div>
           </div>

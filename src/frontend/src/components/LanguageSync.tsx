@@ -2,7 +2,7 @@ import { useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import api from '@/lib/api'
 
-export function LanguageSync() {
+export function LanguageSync(): null {
   const { i18n } = useTranslation()
 
   useEffect(() => {

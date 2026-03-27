@@ -542,6 +542,8 @@ export default function MovementFormPage() {
           creditCardId: p.creditCardId ?? '',
           creditCardMemberId: p.creditCardMemberId ?? '',
           installments: p.installments ? String(p.installments) : '1',
+          bonificationType: p.bonificationType ?? '',
+          bonificationValue: p.bonificationValue ? String(p.bonificationValue) : '',
         })),
       })
     } catch {
