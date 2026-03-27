@@ -102,6 +102,24 @@ En build de producción, Google Translate modifica el DOM y React pierde el rast
 
 ---
 
+## Conectarse a la BD de producción desde DBeaver
+
+Railway PostgreSQL no tiene el timezone `America/Buenos_Aires` instalado. DBeaver lo envía automáticamente tomándolo del sistema operativo Windows, lo que causa el error:
+```
+FATAL: invalid value for parameter "TimeZone": "America/Buenos_Aires"
+```
+
+**Solución**: en DBeaver → **Window** → **Preferences** → **User Interface** → **Timezone** → seleccionar **UTC**.
+
+Esto aplica globalmente a todas las conexiones de DBeaver.
+
+Datos de conexión:
+- Host: `gondola.proxy.rlwy.net`
+- Port: `18647`
+- Database: `railway`
+- Username: `postgres`
+- Password: en Railway → servicio PostgreSQL → Variables → `POSTGRES_PASSWORD`
+
 ## Aplicar migraciones en producción
 
 Railway PostgreSQL tiene un TCP Proxy para conexiones externas:
