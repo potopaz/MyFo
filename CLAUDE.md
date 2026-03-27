@@ -29,6 +29,8 @@ cd src/backend && dotnet ef migrations remove -p MyFO.Infrastructure -s MyFO.API
 
 ### Frontend (React 19 + Vite)
 
+> **IMPORTANTE**: Siempre correr `npm run build` antes de pushear. El build de producción es más estricto que el dev server — errores TypeScript que no se ven en dev rompen el deploy en Vercel.
+
 ```bash
 cd src/frontend
 
