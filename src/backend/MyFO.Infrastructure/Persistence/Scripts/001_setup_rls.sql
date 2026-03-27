@@ -92,9 +92,7 @@ DECLARE
         'txn.credit_card_installments',
         'txn.credit_card_payments',
         'txn.statement_periods',
-        'txn.statement_line_items',
-        'txn.statement_payments',
-        'txn.statement_payment_allocations'
+        'txn.statement_line_items'
     ];
 BEGIN
     FOREACH tbl IN ARRAY tenant_tables LOOP
