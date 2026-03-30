@@ -280,8 +280,6 @@ export default function TransferFormPage() {
 
   const fromErState = getExchangeRateState(fromCurrencyCode)
   const toErState = getExchangeRateState(toCurrencyCode)
-  const showBimonetary = !!(fromCurrencyCode && primaryCurrency && secondaryCurrency)
-
   // ── Tooltip values ───────────────────────────────────────────────────────────
   const ttFmt = (n: number) => n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
   const ttFromPrimary  = parseFloat(normalizeDecimal(form.fromPrimaryExchangeRate)) || 1
@@ -660,7 +658,7 @@ export default function TransferFormPage() {
               <Label>
                 {fromCurrencyCode ? t('transfers.form.fromAmount', { currency: fromCurrencyCode }) : t('transfers.form.fromAmountLabel')}
               </Label>
-              {fromCurrencyCode && showBimonetary && (
+              {fromCurrencyCode && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger>
@@ -723,7 +721,7 @@ export default function TransferFormPage() {
               <Label>
                 {toCurrencyCode ? t('transfers.form.toAmount', { currency: toCurrencyCode }) : t('transfers.form.toAmountLabel')}
               </Label>
-              {toCurrencyCode && showBimonetary && (
+              {toCurrencyCode && (
                 <TooltipProvider>
                   <Tooltip>
                     <TooltipTrigger>

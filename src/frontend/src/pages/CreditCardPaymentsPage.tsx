@@ -258,10 +258,8 @@ export default function CreditCardPaymentsPage() {
   // Exchange rate logic (same as MovementFormPage)
   const primaryCurrency = familySettings?.primaryCurrencyCode ?? ''
   const secondaryCurrency = familySettings?.secondaryCurrencyCode ?? ''
-  const isBimonetary = !!primaryCurrency && !!secondaryCurrency && primaryCurrency !== secondaryCurrency
-
   const getExchangeRateState = () => {
-    if (!isBimonetary || !cardCurrency) return { show: false, lockPrimary: false, lockSecondary: false }
+    if (!cardCurrency) return { show: false, lockPrimary: false, lockSecondary: false }
     if (cardCurrency === primaryCurrency) return { show: true, lockPrimary: true, lockSecondary: false }
     if (cardCurrency === secondaryCurrency) return { show: true, lockPrimary: false, lockSecondary: true }
     return { show: true, lockPrimary: false, lockSecondary: false }
