@@ -22,11 +22,14 @@ import {
   CreditCard,
   ArrowLeftRight,
   Receipt,
-  LineChart,
   RefreshCw,
   FileText,
   Banknote,
   Settings,
+  BarChart2,
+  TrendingUp,
+  Layers,
+  Building2,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -60,7 +63,10 @@ export function AppSidebar() {
   ]
 
   const reportItems: MenuItem[] = [
-    { title: t('nav.analysis'), url: '/analysis', icon: LineChart },
+    { title: t('nav.reportsGastos'), url: '/reports/gastos', icon: BarChart2 },
+    { title: t('nav.reportsFlujo'), url: '/reports/flujo', icon: TrendingUp },
+    { title: t('nav.reportsTarjetas'), url: '/reports/tarjetas', icon: Layers },
+    { title: t('nav.reportsPatrimonio'), url: '/reports/patrimonio', icon: Building2 },
   ]
 
   const adminItems: MenuItem[] = [

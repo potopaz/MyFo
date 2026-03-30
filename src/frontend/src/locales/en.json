@@ -57,6 +57,10 @@
     "settings": "Settings",
     "dashboard": "Dashboard",
     "analysis": "Analysis by period",
+    "reportsGastos": "Expenses & Income",
+    "reportsFlujo": "Cash Flow",
+    "reportsTarjetas": "Cards & Cost Centers",
+    "reportsPatrimonio": "Patrimony",
     "admin": "Administration",
     "members": "Members"
   },

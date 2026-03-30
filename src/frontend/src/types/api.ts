@@ -429,3 +429,128 @@ export interface PeriodAnalysisDto {
   byCharacter: DimensionItemDto[]
   byAccountingType: DimensionItemDto[]
 }
+
+// ── Report DTOs ──────────────────────────────────────────────────────────────
+
+export interface NameAmountDto {
+  name: string
+  id?: string
+  amount: number
+}
+
+export interface TimePointDto {
+  label: string
+  amount: number
+}
+
+export interface TimeSeriesMultiDto {
+  label: string
+  values: Record<string, number>
+}
+
+export interface OrdVsExtraDto {
+  ordinary: number
+  extraordinary: number
+  unspecified: number
+}
+
+export interface CategoryExpenseDto {
+  categoryName: string
+  categoryId?: string
+  amount: number
+  subcategories: NameAmountDto[]
+}
+
+export interface IncomeExpenseReportDto {
+  granularity: string
+  totalExpense: number
+  totalIncome: number
+  expenseBySubcategory: NameAmountDto[]
+  expenseByCategory: CategoryExpenseDto[]
+  ordVsExtra: OrdVsExtraDto
+  categoryEvolution: TimeSeriesMultiDto[]
+  incomeBySource: NameAmountDto[]
+  incomeEvolution: TimePointDto[]
+}
+
+export interface CashFlowPointDto {
+  label: string
+  income: number
+  expense: number
+  net: number
+}
+
+export interface FutureInstallmentDto {
+  label: string
+  amount: number
+  cardName: string
+}
+
+export interface CashFlowReportDto {
+  granularity: string
+  cashFlow: CashFlowPointDto[]
+  futureInstallments: FutureInstallmentDto[]
+  paymentMethods: NameAmountDto[]
+  paymentMethodEvolution: TimeSeriesMultiDto[]
+}
+
+export interface CardInstallmentsSummaryDto {
+  cardName: string
+  totalDebt: number
+  pendingInstallments: number
+}
+
+export interface ChargesVsBonificationsDto {
+  totalCharges: number
+  totalBonifications: number
+  net: number
+}
+
+export interface CardsCCReportDto {
+  totalDebt: number
+  totalPaid: number
+  installmentsByCard: CardInstallmentsSummaryDto[]
+  byCostCenter: NameAmountDto[]
+  costCenterEvolution: TimeSeriesMultiDto[]
+  chargesVsBonifications: ChargesVsBonificationsDto
+  granularity: string
+}
+
+export interface AccountBalanceItemDto {
+  name: string
+  accountType: string
+  currencyCode: string
+  balance: number
+  balanceInReportCurrency: number
+}
+
+export interface PatrimonyReportDto {
+  totalAssets: number
+  totalLiabilities: number
+  netPatrimony: number
+  periodIncome: number
+  periodExpense: number
+  periodSavings: number
+  savingsRatio: number | null
+  patrimonyEvolution: TimePointDto[]
+  balanceByCurrency: NameAmountDto[]
+  balanceByAccountType: NameAmountDto[]
+  topAccounts: AccountBalanceItemDto[]
+}
+
+export interface DrilldownMovementDto {
+  movementId: string
+  date: string
+  description: string | null
+  subcategoryName: string
+  categoryName: string
+  amount: number
+  currencyCode: string
+  movementType: string
+}
+
+export interface DrilldownResultDto {
+  totalCount: number
+  totalAmount: number
+  items: DrilldownMovementDto[]
+}

@@ -2,6 +2,7 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 @import "@fontsource-variable/inter";
+@import "react-day-picker/src/style.css";
 
 @custom-variant dark (&:is(.dark *));
 
@@ -146,4 +147,26 @@
   html {
     @apply font-sans;
     }
+}
+
+/* react-day-picker theme overrides */
+.rdp-root {
+  --rdp-accent-color: oklch(0.588 0.158 252.1);
+  --rdp-accent-background-color: oklch(0.588 0.158 252.1 / 15%);
+  --rdp-day-height: 36px;
+  --rdp-day-width: 36px;
+  --rdp-day_button-height: 34px;
+  --rdp-day_button-width: 34px;
+  --rdp-range_middle-background-color: oklch(0.588 0.158 252.1 / 12%);
+  --rdp-range_start-date-background-color: oklch(0.588 0.158 252.1);
+  --rdp-range_end-date-background-color: oklch(0.588 0.158 252.1);
+  --rdp-range_start-color: white;
+  --rdp-range_end-color: white;
+  --rdp-today-color: oklch(0.588 0.158 252.1);
+  font-size: 0.875rem;
+}
+
+.dark .rdp-root {
+  --rdp-accent-background-color: oklch(0.588 0.158 252.1 / 20%);
+  --rdp-range_middle-background-color: oklch(0.588 0.158 252.1 / 18%);
 }
