@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { format } from 'date-fns'
 import { ChevronLeft, ChevronRight, Download, Printer } from 'lucide-react'
 import * as XLSX from 'xlsx'
+import { toast } from 'sonner'
 import {
   Dialog,
   DialogContent,
@@ -10,8 +11,16 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { ComboboxField } from '@/components/crud/ComboboxField'
 import api from '@/lib/api'
-import type { DrilldownMovementDto, DrilldownResultDto } from '@/types/api'
+import type { CategoryDto, CostCenterDto, DrilldownMovementDto, DrilldownResultDto } from '@/types/api'
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -31,11 +40,7 @@ interface DrilldownSheetProps {
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function fmtDate(dateStr: string): string {
-  try {
-    return format(new Date(dateStr), 'dd/MM/yyyy')
-  } catch {
-    return dateStr
-  }
+  try { return format(new Date(dateStr), 'dd/MM/yyyy') } catch { return dateStr }
 }
 
 function fmtAmount(v: number, currencyCode: string): string {
@@ -53,9 +58,21 @@ function movTypeLabel(mt: string): string {
   return mt === 'Income' ? 'Ingreso' : 'Gasto'
 }
 
+const ACCOUNTING_TYPE_LABELS: Record<string, string> = {
+  Asset: 'Activo',
+  Liability: 'Pasivo',
+  Income: 'Ingreso',
+  Expense: 'Gasto',
+}
+
+function acctLabel(v: string | null | undefined): string {
+  if (!v) return '–'
+  return ACCOUNTING_TYPE_LABELS[v] ?? v
+}
+
 const PAGE_SIZE = 50
 
-// ─── Fetch all items (for export / print) ────────────────────────────────────
+// ─── Fetch all items (for export / print) ─────────────────────────────────────
 
 async function fetchAllItems(params: Record<string, string | number | undefined>): Promise<DrilldownMovementDto[]> {
   const res = await api.get<DrilldownResultDto>('/reports/drilldown', {
@@ -85,14 +102,14 @@ function exportToExcel(items: DrilldownMovementDto[], title: string) {
     Subcategoría: item.subcategoryName,
     'Centro de Costo': item.costCenterName ?? '',
     Carácter: ordLabel(item.isOrdinary),
+    'Tipo Contable': acctLabel(item.accountingType),
     Importe: item.amount,
     Moneda: item.currencyCode,
     Tipo: movTypeLabel(item.movementType),
   }))
 
   const ws = XLSX.utils.json_to_sheet(rows)
-  // Column widths
-  ws['!cols'] = [{ wch: 12 }, { wch: 35 }, { wch: 20 }, { wch: 22 }, { wch: 20 }, { wch: 10 }, { wch: 14 }, { wch: 8 }, { wch: 10 }]
+  ws['!cols'] = [{ wch: 12 }, { wch: 35 }, { wch: 20 }, { wch: 22 }, { wch: 20 }, { wch: 10 }, { wch: 12 }, { wch: 14 }, { wch: 8 }, { wch: 10 }]
   const wb = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(wb, ws, 'Detalle')
   const safeName = title.replace(/[^\w\s-]/g, '').trim().replace(/\s+/g, '-').slice(0, 40)
@@ -109,6 +126,7 @@ function printItems(items: DrilldownMovementDto[], title: string, currency: stri
       <td>${item.categoryName} › ${item.subcategoryName}</td>
       <td>${item.costCenterName ?? '–'}</td>
       <td>${ordLabel(item.isOrdinary)}</td>
+      <td>${acctLabel(item.accountingType)}</td>
       <td class="num ${item.movementType === 'Expense' ? 'neg' : 'pos'}">
         ${item.movementType === 'Expense' ? '–' : '+'}${fmtAmount(item.amount, item.currencyCode)}
       </td>
@@ -134,11 +152,11 @@ function printItems(items: DrilldownMovementDto[], title: string, currency: stri
     <table>
       <thead><tr>
         <th>Fecha</th><th>Descripción</th><th>Categoría / Subcategoría</th>
-        <th>CC</th><th>Carácter</th><th class="num">Importe</th>
+        <th>CC</th><th>Carácter</th><th>Tipo Contable</th><th class="num">Importe</th>
       </tr></thead>
       <tbody>${rows}</tbody>
       <tfoot><tr>
-        <td colspan="4"></td>
+        <td colspan="5"></td>
         <td>Total</td>
         <td class="num ${netAmount >= 0 ? 'pos' : 'neg'}">${fmtSigned(netAmount, currency)}</td>
       </tr></tfoot>
@@ -171,9 +189,33 @@ export function DrilldownSheet({
   const [actionLoading, setActionLoading] = useState(false)
   const [page, setPage] = useState(1)
 
+  // Editable items (optimistic state)
+  const [localItems, setLocalItems] = useState<DrilldownMovementDto[]>([])
+  const [savingIds, setSavingIds] = useState<Set<string>>(new Set())
+
+  // Catalog data for selects
+  const [categories, setCategories] = useState<CategoryDto[]>([])
+  const [costCenters, setCostCenters] = useState<CostCenterDto[]>([])
+
   useEffect(() => {
     setPage(1)
   }, [dimension, dimensionValue, movementType, dateRange, currency, installmentMonth])
+
+  // Sync localItems when server data changes
+  useEffect(() => {
+    if (data?.items) setLocalItems(data.items)
+  }, [data])
+
+  // Load catalogs once on mount
+  useEffect(() => {
+    Promise.all([
+      api.get<CategoryDto[]>('/categories'),
+      api.get<CostCenterDto[]>('/cost-centers'),
+    ]).then(([catsRes, ccRes]) => {
+      setCategories(catsRes.data)
+      setCostCenters(ccRes.data)
+    })
+  }, [])
 
   useEffect(() => {
     if (!open) return
@@ -186,11 +228,7 @@ export function DrilldownSheet({
 
     api.get<DrilldownResultDto>('/reports/drilldown', {
       params: {
-        from,
-        to,
-        currency,
-        dimension,
-        dimensionValue,
+        from, to, currency, dimension, dimensionValue,
         ...(movementType ? { movementType } : {}),
         ...(installmentMonth ? { installmentMonth } : {}),
         page,
@@ -212,9 +250,7 @@ export function DrilldownSheet({
     return {
       from: format(dateRange.from, 'yyyy-MM-dd'),
       to: format(dateRange.to, 'yyyy-MM-dd'),
-      currency,
-      dimension,
-      dimensionValue,
+      currency, dimension, dimensionValue,
       ...(movementType ? { movementType } : {}),
       ...(installmentMonth ? { installmentMonth } : {}),
     }
@@ -245,10 +281,119 @@ export function DrilldownSheet({
     }
   }
 
+  // ── Inline edit ─────────────────────────────────────────────────────────────
+
+  async function patchClassification(
+    movementId: string,
+    patch: Partial<Pick<DrilldownMovementDto, 'subcategoryId' | 'subcategoryName' | 'categoryName' | 'costCenterId' | 'costCenterName' | 'isOrdinary' | 'accountingType'>>,
+  ) {
+    const item = localItems.find(i => i.movementId === movementId)
+    if (!item || savingIds.has(movementId)) return
+
+    const prevItems = localItems
+
+    // Optimistic update (keep rowVersion unchanged until success)
+    setLocalItems(prev => prev.map(i => i.movementId === movementId ? { ...i, ...patch } : i))
+    setSavingIds(prev => new Set([...prev, movementId]))
+
+    const merged = { ...item, ...patch }
+
+    try {
+      await api.patch(`/movements/${movementId}/classification`, {
+        subcategoryId: merged.subcategoryId,
+        accountingType: merged.accountingType ?? null,
+        isOrdinary: merged.isOrdinary,
+        costCenterId: merged.costCenterId ?? null,
+        rowVersion: item.rowVersion,
+      })
+      // Increment rowVersion for all rows sharing this movementId (e.g. CC installments)
+      setLocalItems(prev => prev.map(i =>
+        i.movementId === movementId ? { ...i, ...patch, rowVersion: i.rowVersion + 1 } : i
+      ))
+    } catch {
+      setLocalItems(prevItems)
+      toast.error('Error al guardar los cambios')
+    } finally {
+      setSavingIds(prev => {
+        const s = new Set(prev)
+        s.delete(movementId)
+        return s
+      })
+    }
+  }
+
+  function handleSubcategoryChange(item: DrilldownMovementDto, newSubId: string) {
+    let subName = ''
+    let catName = ''
+    for (const cat of categories) {
+      const sub = cat.subcategories.find(s => s.subcategoryId === newSubId)
+      if (sub) { subName = sub.name; catName = cat.name; break }
+    }
+    patchClassification(item.movementId, {
+      subcategoryId: newSubId,
+      subcategoryName: subName,
+      categoryName: catName,
+    })
+  }
+
+  function handleCostCenterChange(item: DrilldownMovementDto, val: string) {
+    const costCenterId = val || null
+    const costCenterName = val ? (costCenters.find(cc => cc.costCenterId === val)?.name ?? null) : null
+    patchClassification(item.movementId, { costCenterId, costCenterName })
+  }
+
+  function handleOrdinaryChange(item: DrilldownMovementDto, val: string) {
+    const isOrdinary = val === 'true' ? true : val === 'false' ? false : null
+    patchClassification(item.movementId, { isOrdinary })
+  }
+
+  function handleAccountingTypeChange(item: DrilldownMovementDto, val: string) {
+    patchClassification(item.movementId, { accountingType: val || null })
+  }
+
+  // ── Catalog option arrays (memoised) ─────────────────────────────────────
+
+  const incomeSubOpts = useMemo(() =>
+    categories.flatMap(cat =>
+      cat.subcategories
+        .filter(s => s.isActive && (s.subcategoryType === 'Income' || s.subcategoryType === 'Both'))
+        .map(s => ({ value: s.subcategoryId, label: s.name }))
+    ), [categories])
+
+  const expenseSubOpts = useMemo(() =>
+    categories.flatMap(cat =>
+      cat.subcategories
+        .filter(s => s.isActive && (s.subcategoryType === 'Expense' || s.subcategoryType === 'Both'))
+        .map(s => ({ value: s.subcategoryId, label: s.name }))
+    ), [categories])
+
+  const costCenterOpts = useMemo(() => [
+    { value: '', label: '–' },
+    ...costCenters.filter(cc => cc.isActive).map(cc => ({ value: cc.costCenterId, label: cc.name })),
+  ], [costCenters])
+
+  function subcatOptsForItem(item: DrilldownMovementDto): { value: string; label: string }[] {
+    const base = item.movementType === 'Income' ? incomeSubOpts : expenseSubOpts
+    if (base.some(o => o.value === item.subcategoryId)) return base
+    return [{ value: item.subcategoryId, label: item.subcategoryName }, ...base]
+  }
+
+  function costCenterOptsForItem(item: DrilldownMovementDto): { value: string; label: string }[] {
+    if (!item.costCenterId) return costCenterOpts
+    if (costCenterOpts.some(o => o.value === item.costCenterId)) return costCenterOpts
+    return [
+      { value: '', label: '–' },
+      { value: item.costCenterId, label: item.costCenterName ?? item.costCenterId },
+      ...costCenterOpts.slice(1),
+    ]
+  }
+
+  // ────────────────────────────────────────────────────────────────────────────
+
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onClose() }}>
       <DialogContent
-        className="sm:max-w-[1100px] w-full max-h-[85vh] flex flex-col gap-0 p-0 overflow-hidden"
+        className="sm:max-w-[1200px] w-full max-h-[85vh] flex flex-col gap-0 p-0 overflow-hidden"
         showCloseButton
       >
         <DialogHeader className="px-6 pt-5 pb-3 border-b shrink-0">
@@ -261,25 +406,11 @@ export function DrilldownSheet({
                 <span className="font-medium text-foreground">{fmtAmount(data.totalAmount, currency)}</span>
               </div>
               <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExport}
-                  disabled={actionLoading}
-                  className="h-7 text-xs gap-1.5"
-                >
-                  <Download className="h-3.5 w-3.5" />
-                  Excel
+                <Button variant="outline" size="sm" onClick={handleExport} disabled={actionLoading} className="h-7 text-xs gap-1.5">
+                  <Download className="h-3.5 w-3.5" />Excel
                 </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handlePrint}
-                  disabled={actionLoading}
-                  className="h-7 text-xs gap-1.5"
-                >
-                  <Printer className="h-3.5 w-3.5" />
-                  Imprimir
+                <Button variant="outline" size="sm" onClick={handlePrint} disabled={actionLoading} className="h-7 text-xs gap-1.5">
+                  <Printer className="h-3.5 w-3.5" />Imprimir
                 </Button>
               </div>
             </div>
@@ -297,7 +428,7 @@ export function DrilldownSheet({
                 </div>
               ))}
             </div>
-          ) : !data || data.items.length === 0 ? (
+          ) : !data || localItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center py-16 text-muted-foreground">
               <p className="text-sm">Sin movimientos para este filtro</p>
             </div>
@@ -307,45 +438,103 @@ export function DrilldownSheet({
                 <tr className="border-b text-xs text-muted-foreground">
                   <th className="text-left py-2 pr-3 font-medium whitespace-nowrap">Fecha</th>
                   <th className="text-left py-2 pr-3 font-medium">Descripción</th>
-                  <th className="text-left py-2 pr-3 font-medium hidden sm:table-cell">Categoría / Subcategoría</th>
-                  <th className="text-left py-2 pr-3 font-medium hidden lg:table-cell">CC</th>
+                  <th className="text-left py-2 pr-3 font-medium hidden sm:table-cell">Subcategoría</th>
+                  <th className="text-left py-2 pr-3 font-medium hidden lg:table-cell">C. Costo</th>
                   <th className="text-left py-2 pr-3 font-medium hidden lg:table-cell">Carácter</th>
+                  <th className="text-left py-2 pr-3 font-medium hidden lg:table-cell">Tipo Contable</th>
                   <th className="text-right py-2 font-medium">Importe</th>
                 </tr>
               </thead>
               <tbody>
-                {data.items.map((item) => (
-                  <tr key={item.movementId} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                    <td className="py-2 pr-3 text-muted-foreground whitespace-nowrap text-xs">
-                      {fmtDate(item.date)}
-                    </td>
-                    <td className="py-2 pr-3 max-w-[200px] truncate">
-                      {item.description ?? <span className="text-muted-foreground italic">Sin descripción</span>}
-                    </td>
-                    <td className="py-2 pr-3 hidden sm:table-cell">
-                      <span className="text-xs text-muted-foreground">{item.categoryName}</span>
-                      <span className="text-muted-foreground"> › </span>
-                      <span className="text-xs">{item.subcategoryName}</span>
-                    </td>
-                    <td className="py-2 pr-3 text-xs text-muted-foreground hidden lg:table-cell whitespace-nowrap">
-                      {item.costCenterName ?? '–'}
-                    </td>
-                    <td className="py-2 pr-3 text-xs text-muted-foreground hidden lg:table-cell whitespace-nowrap">
-                      {ordLabel(item.isOrdinary)}
-                    </td>
-                    <td className="py-2 text-right font-medium whitespace-nowrap">
-                      <span className={item.movementType === 'Expense' ? 'text-rose-500' : 'text-emerald-600'}>
-                        {item.movementType === 'Expense' ? '–' : '+'}{fmtAmount(item.amount, item.currencyCode)}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {localItems.map((item) => {
+                  const saving = savingIds.has(item.movementId)
+                  return (
+                    <tr key={`${item.movementId}-${item.date}`} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+                      <td className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap text-xs">
+                        {fmtDate(item.date)}
+                      </td>
+                      <td className="py-1.5 pr-3 max-w-[180px] truncate text-xs">
+                        {item.description ?? <span className="text-muted-foreground italic">Sin descripción</span>}
+                      </td>
+
+                      {/* Subcategoría — editable */}
+                      <td className="py-1.5 pr-3 hidden sm:table-cell min-w-[150px] max-w-[220px]">
+                        <div className="text-[10px] text-muted-foreground leading-none mb-0.5">{item.categoryName}</div>
+                        <ComboboxField
+                          id={`sub-${item.movementId}-${item.date}`}
+                          value={item.subcategoryId}
+                          options={subcatOptsForItem(item)}
+                          onChange={(val) => val && handleSubcategoryChange(item, val)}
+                          disabled={saving}
+                          className="h-7 text-xs px-2"
+                        />
+                      </td>
+
+                      {/* Centro de Costo — editable */}
+                      <td className="py-1.5 pr-3 hidden lg:table-cell min-w-[110px] max-w-[160px]">
+                        <ComboboxField
+                          id={`cc-${item.movementId}-${item.date}`}
+                          value={item.costCenterId ?? ''}
+                          options={costCenterOptsForItem(item)}
+                          onChange={(val) => handleCostCenterChange(item, val)}
+                          disabled={saving}
+                          className="h-7 text-xs px-2"
+                        />
+                      </td>
+
+                      {/* Carácter — editable */}
+                      <td className="py-1.5 pr-3 hidden lg:table-cell min-w-[90px]">
+                        <Select
+                          value={item.isOrdinary === true ? 'true' : item.isOrdinary === false ? 'false' : 'none'}
+                          onValueChange={(val) => val && handleOrdinaryChange(item, val === 'none' ? '' : val)}
+                          disabled={saving}
+                        >
+                          <SelectTrigger className="h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">–</SelectItem>
+                            <SelectItem value="true">Ord.</SelectItem>
+                            <SelectItem value="false">Extra.</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+
+                      {/* Tipo Contable — editable */}
+                      <td className="py-1.5 pr-3 hidden lg:table-cell min-w-[100px]">
+                        <Select
+                          value={item.accountingType ?? 'none'}
+                          onValueChange={(val) => val && handleAccountingTypeChange(item, val === 'none' ? '' : val)}
+                          disabled={saving}
+                        >
+                          <SelectTrigger className="h-7 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="none">–</SelectItem>
+                            <SelectItem value="Asset">Activo</SelectItem>
+                            <SelectItem value="Liability">Pasivo</SelectItem>
+                            <SelectItem value="Income">Ingreso</SelectItem>
+                            <SelectItem value="Expense">Gasto</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </td>
+
+                      <td className="py-1.5 text-right font-medium whitespace-nowrap">
+                        <span className={item.movementType === 'Expense' ? 'text-rose-500' : 'text-emerald-600'}>
+                          {item.movementType === 'Expense' ? '–' : '+'}{fmtAmount(item.amount, item.currencyCode)}
+                        </span>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
               <tfoot>
                 <tr className="border-t-2">
                   <td className="py-2 pr-3" />
+                  <td className="py-2 pr-3" />
                   <td className="py-2 pr-3 hidden sm:table-cell" />
-                  <td className="py-2 pr-3 hidden sm:table-cell" />
+                  <td className="py-2 pr-3 hidden lg:table-cell" />
                   <td className="py-2 pr-3 hidden lg:table-cell" />
                   <td className="py-2 pr-3 text-xs text-muted-foreground font-semibold hidden lg:table-cell">Total</td>
                   <td className="py-2 text-right font-bold text-sm whitespace-nowrap">
@@ -365,23 +554,11 @@ export function DrilldownSheet({
               Página {page} de {totalPages}
             </span>
             <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page <= 1}
-              >
-                <ChevronLeft className="h-4 w-4" />
-                Anterior
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.max(1, p - 1))} disabled={page <= 1}>
+                <ChevronLeft className="h-4 w-4" />Anterior
               </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page >= totalPages}
-              >
-                Siguiente
-                <ChevronRight className="h-4 w-4" />
+              <Button variant="outline" size="sm" onClick={() => setPage((p) => Math.min(totalPages, p + 1))} disabled={page >= totalPages}>
+                Siguiente<ChevronRight className="h-4 w-4" />
               </Button>
             </div>
           </div>

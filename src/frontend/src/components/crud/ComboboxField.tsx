@@ -11,6 +11,7 @@ interface ComboboxFieldProps {
   placeholder?: string
   required?: boolean
   disabled?: boolean
+  className?: string
 }
 
 export function ComboboxField({
@@ -22,6 +23,7 @@ export function ComboboxField({
   placeholder,
   required,
   disabled,
+  className,
 }: ComboboxFieldProps) {
   const [options, setOptions] = useState(staticOptions ?? [])
   const [search, setSearch] = useState('')
@@ -117,6 +119,7 @@ export function ComboboxField({
         id={id}
         type="text"
         autoComplete="off"
+        className={className}
         value={search}
         onChange={(e) => {
           if (disabled) return
