@@ -25,7 +25,11 @@ export function ComboboxField({
   disabled,
   className,
 }: ComboboxFieldProps) {
-  const [options, setOptions] = useState(staticOptions ?? [])
+  // For async options (loadOptions): internal state
+  // For static options: use the prop directly — no copying, always fresh
+  const [asyncOptions, setAsyncOptions] = useState<{ value: string; label: string }[]>([])
+  const options = staticOptions ?? asyncOptions
+
   const [search, setSearch] = useState('')
   const [open, setOpen] = useState(false)
   const [highlightIndex, setHighlightIndex] = useState(0)
@@ -35,18 +39,13 @@ export function ComboboxField({
   // Load async options
   useEffect(() => {
     if (loadOptions) {
-      loadOptions().then(setOptions)
+      loadOptions().then(setAsyncOptions)
     }
   }, [loadOptions])
 
-  // Sync static options
+  // Sync display text when value or options change (only when dropdown is closed)
   useEffect(() => {
-    if (staticOptions) setOptions(staticOptions)
-  }, [staticOptions])
-
-  // Sync display text when value or options change
-  useEffect(() => {
-    if (open) return // dropdown open — don't overwrite user's search/browse
+    if (open) return
     if (value) {
       const opt = options.find((o) => o.value === value)
       setSearch(opt ? opt.label : value)
@@ -95,6 +94,7 @@ export function ComboboxField({
     if (!open) {
       if (e.key === 'ArrowDown' || e.key === 'Enter') {
         e.preventDefault()
+        setSearch('')
         setOpen(true)
       }
       return
