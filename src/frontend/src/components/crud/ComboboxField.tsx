@@ -46,7 +46,7 @@ export function ComboboxField({
 
   // Sync display text when value or options change
   useEffect(() => {
-    if (open && !value) return // user is typing/searching, don't overwrite
+    if (open) return // dropdown open — don't overwrite user's search/browse
     if (value) {
       const opt = options.find((o) => o.value === value)
       setSearch(opt ? opt.label : value)
@@ -128,7 +128,7 @@ export function ComboboxField({
           // Clear selection if user edits text
           if (value) onChange('')
         }}
-        onFocus={() => { if (!disabled) setOpen(true) }}
+        onFocus={() => { if (!disabled) { setSearch(''); setOpen(true) } }}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}
         required={required && !value}

@@ -70,13 +70,11 @@ const PAGE_SIZE = 50
 type Opt = { value: string; label: string }
 
 const ORDINARY_OPTS: Opt[] = [
-  { value: 'none', label: '–' },
   { value: 'true', label: 'Ord.' },
   { value: 'false', label: 'Extr.' },
 ]
 
 const ACCOUNTING_TYPE_OPTS: Opt[] = [
-  { value: 'none', label: '–' },
   { value: 'Asset', label: 'Activo' },
   { value: 'Liability', label: 'Pasivo' },
   { value: 'Income', label: 'Ingreso' },
@@ -255,9 +253,9 @@ function DrilldownRow({
       <td className="py-1.5 pr-3 hidden lg:table-cell min-w-[90px]">
         <ComboboxField
           id={`ord-${rowKey}`}
-          value={item.isOrdinary === true ? 'true' : item.isOrdinary === false ? 'false' : 'none'}
+          value={item.isOrdinary === true ? 'true' : item.isOrdinary === false ? 'false' : ''}
           options={ORDINARY_OPTS}
-          onChange={(val) => val && onOrdinaryChange(item, val === 'none' ? '' : val)}
+          onChange={(val) => onOrdinaryChange(item, val)}
           disabled={saving}
           className="h-7 text-xs px-2"
         />
@@ -267,9 +265,9 @@ function DrilldownRow({
       <td className="py-1.5 pr-3 hidden lg:table-cell min-w-[100px]">
         <ComboboxField
           id={`acct-${rowKey}`}
-          value={item.accountingType ?? 'none'}
+          value={item.accountingType ?? ''}
           options={ACCOUNTING_TYPE_OPTS}
-          onChange={(val) => val && onAccountingTypeChange(item, val === 'none' ? '' : val)}
+          onChange={(val) => onAccountingTypeChange(item, val)}
           disabled={saving}
           className="h-7 text-xs px-2"
         />
