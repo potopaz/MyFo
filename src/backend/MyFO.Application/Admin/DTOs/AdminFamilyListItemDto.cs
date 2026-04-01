@@ -10,4 +10,8 @@ public class AdminFamilyListItemDto
     public string? Notes { get; set; }
     public DateTime? DisabledAt { get; set; }
     public string? DisabledReason { get; set; }
+    public int SubcategoryCount { get; set; }
+    public int CostCenterCount { get; set; }
+    public int MovementCount { get; set; }
+    public int TransferCount { get; set; }
 }

@@ -1,3 +1,4 @@
+using MyFO.Application.Common;
 using MyFO.Application.Common.Mediator;
 using Microsoft.EntityFrameworkCore;
 using MyFO.Application.Common.Interfaces;
@@ -30,7 +31,11 @@ public class GetMovementsQueryHandler : IRequestHandler<GetMovementsQuery, List<
             query = query.Where(m => m.SubcategoryId == request.SubcategoryId.Value);
 
         if (!string.IsNullOrWhiteSpace(request.Description))
-            query = query.Where(m => m.Description != null && m.Description.Contains(request.Description.Trim()));
+        {
+            var term = request.Description.Trim().ToLower();
+            query = query.Where(m => m.Description != null &&
+                PgFunctions.Unaccent(m.Description.ToLower()).Contains(PgFunctions.Unaccent(term)));
+        }
 
         return await query
             .OrderByDescending(m => m.Date)

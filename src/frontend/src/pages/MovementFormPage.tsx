@@ -24,6 +24,7 @@ import { loadFamilyCurrencyOptions } from '@/lib/currency-options'
 import { loadCostCenterOptions, clearCostCenterCache } from '@/lib/costcenter-options'
 import { loadSubcategoryOptions, clearSubcategoryCache, type SubcategoryOption } from '@/lib/subcategory-options'
 import { loadCashBoxOptions, loadBankAccountOptions, loadCreditCardOptions, type PaymentEntityOption, type CreditCardOption } from '@/lib/payment-entities'
+import { localDateISO } from '@/lib/utils'
 import type { MovementDto, FamilySettingsDto, FrequentMovementDto } from '@/types/api'
 import { useNotifications } from '@/contexts/NotificationsContext'
 
@@ -40,7 +41,7 @@ function normalizeDecimal(value: string): string {
 }
 
 function formatDateISO(d: Date): string {
-  return d.toISOString().slice(0, 10)
+  return localDateISO(d)
 }
 
 
@@ -250,8 +251,9 @@ export default function MovementFormPage() {
         try {
           const { data } = await api.get<FrequentMovementDto>(`/frequent-movements/${fromFrequentId}`)
 
+          const isCreditCardPayment = data.paymentMethodType === 'CreditCard'
           setForm({
-            date: '',
+            date: isCreditCardPayment ? '' : formatDateISO(new Date()),
             movementType: data.movementType,
             amount: data.amount.toFixed(2),
             currencyCode: data.currencyCode,
@@ -728,23 +730,21 @@ export default function MovementFormPage() {
           <div className="space-y-1.5">
             <div className="flex items-center gap-1.5">
               <Label>{t('movements.form.totalAmount')}</Label>
-              {form.currencyCode && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger>
-                      <Info className="h-3.5 w-3.5 text-muted-foreground cursor-default shrink-0" />
-                    </TooltipTrigger>
-                    <TooltipContent side="top">
-                      <div className="space-y-0.5">
-                        {!ttIsPrimary && <p>TC {primaryCurrency}: {ttExRate}</p>}
-                        {!ttIsPrimary && ttHasAmount && <p>{ttFmt(ttAmount * ttExRate)} {primaryCurrency}</p>}
-                        {!ttIsSecondary && <p>TC {secondaryCurrency}: {ttSecRate}</p>}
-                        {!ttIsSecondary && ttHasAmount && <p>{ttFmt(ttAmount * ttSecRate)} {secondaryCurrency}</p>}
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <Info className="h-3.5 w-3.5 text-muted-foreground cursor-default shrink-0" />
+                  </TooltipTrigger>
+                  <TooltipContent side="top">
+                    <div className="space-y-0.5">
+                      {!ttIsPrimary && <p>TC {primaryCurrency}: {ttExRate}</p>}
+                      {!ttIsPrimary && ttHasAmount && <p>{ttFmt(ttAmount * ttExRate)} {primaryCurrency}</p>}
+                      {!ttIsSecondary && <p>TC {secondaryCurrency}: {ttSecRate}</p>}
+                      {!ttIsSecondary && ttHasAmount && <p>{ttFmt(ttAmount * ttSecRate)} {secondaryCurrency}</p>}
+                    </div>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </div>
             <AmountInput
               value={form.amount}
@@ -843,7 +843,7 @@ export default function MovementFormPage() {
           {form.payments.map((payment, idx) => (
             <Card key={idx} className={payment.locked ? 'opacity-70' : ''}>
               <CardContent className="p-3">
-                <div className="grid grid-cols-3 gap-3">
+                <div className="grid grid-cols-3 gap-3 items-start">
                   {/* Método */}
                   <div className="space-y-1.5">
                     <div className="flex items-center gap-1">
@@ -876,7 +876,7 @@ export default function MovementFormPage() {
                       <>
                         <Label className="text-xs">{t('movements.form.cashBox')}</Label>
                         {filteredCashBoxes.length === 0 ? (
-                          <p className="text-xs text-muted-foreground py-1">{t('movements.form.noCashBoxes', { currency: form.currencyCode || '—' })}</p>
+                          <p className="text-xs text-muted-foreground py-1 min-h-8 flex items-center">{t('movements.form.noCashBoxes', { currency: form.currencyCode || '—' })}</p>
                         ) : (
                           <Select value={payment.cashBoxId} onValueChange={(v) => updatePayment(idx, { cashBoxId: v as string })} disabled={payment.locked}>
                             <SelectTrigger className="h-8 w-full">
@@ -897,7 +897,7 @@ export default function MovementFormPage() {
                       <>
                         <Label className="text-xs">{t('movements.form.bank')}</Label>
                         {filteredBankAccounts.length === 0 ? (
-                          <p className="text-xs text-muted-foreground py-1">{t('movements.form.noBanks', { currency: form.currencyCode || '—' })}</p>
+                          <p className="text-xs text-muted-foreground py-1 min-h-8 flex items-center">{t('movements.form.noBanks', { currency: form.currencyCode || '—' })}</p>
                         ) : (
                           <Select value={payment.bankAccountId} onValueChange={(v) => updatePayment(idx, { bankAccountId: v as string })} disabled={payment.locked}>
                             <SelectTrigger className="h-8 w-full">
@@ -918,7 +918,7 @@ export default function MovementFormPage() {
                       <>
                         <Label className="text-xs">{t('movements.form.creditCard')}</Label>
                         {filteredCreditCards.length === 0 ? (
-                          <p className="text-xs text-muted-foreground py-1">{t('movements.form.noCards', { currency: form.currencyCode || '—' })}</p>
+                          <p className="text-xs text-muted-foreground py-1 min-h-8 flex items-center">{t('movements.form.noCards', { currency: form.currencyCode || '—' })}</p>
                         ) : (
                           <Select value={payment.creditCardId} onValueChange={(v) => {
                             const card = creditCards.find((c) => c.value === v)
@@ -943,28 +943,28 @@ export default function MovementFormPage() {
 
                   {/* Importe */}
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <Label className="text-xs">{t('movements.form.amountLabel')}</Label>
+                    <Label className="text-xs">{t('movements.form.amountLabel')}</Label>
+                    <div className="flex gap-1">
+                      <AmountInput
+                        value={payment.amount}
+                        onChange={(v) => updatePayment(idx, { amount: v })}
+                        disabled={payment.locked}
+                        placeholder="0.00"
+                        className="h-8 flex-1"
+                      />
                       {!payment.locked && (
                         <div className="flex gap-0.5">
-                          <Button variant="ghost" size="icon" className="h-5 w-5" title={t('movements.form.duplicatePayment')} onClick={() => duplicatePayment(idx)}>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" title={t('movements.form.duplicatePayment')} onClick={() => duplicatePayment(idx)}>
                             <Copy className="h-3 w-3" />
                           </Button>
                           {form.payments.length > 1 && (
-                            <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => removePayment(idx)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => removePayment(idx)}>
                               <X className="h-3 w-3" />
                             </Button>
                           )}
                         </div>
                       )}
                     </div>
-                    <AmountInput
-                      value={payment.amount}
-                      onChange={(v) => updatePayment(idx, { amount: v })}
-                      disabled={payment.locked}
-                      placeholder="0.00"
-                      className="h-8"
-                    />
                   </div>
                 </div>
 

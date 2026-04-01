@@ -63,6 +63,11 @@ public class ApplicationDbContext : IdentityDbContext<ApplicationUser, IdentityR
         // Ensure custom schemas exist
         builder.HasDefaultSchema("public");
 
+        // PostgreSQL unaccent extension + scalar function mapping
+        builder.HasPostgresExtension("unaccent");
+        builder.HasDbFunction(typeof(MyFO.Application.Common.PgFunctions).GetMethod(nameof(MyFO.Application.Common.PgFunctions.Unaccent))!)
+            .HasName("unaccent");
+
         builder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
         ApplyGlobalFilters(builder);
     }

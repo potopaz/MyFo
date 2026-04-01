@@ -282,6 +282,7 @@ export default function StatementPeriodFormPage() {
     | { key: string; type: 'memberHeader'; memberName: string }
     | { key: string; type: 'installment'; inst: StatementInstallmentDto }
     | { key: string; type: 'bonification'; inst: StatementInstallmentDto }
+    | { key: string; type: 'memberSubtotal'; subtotal: number; bonifications: number }
 
   const displayRows: DisplayRow[] = []
   const memberGroups = new Map<string, StatementInstallmentDto[]>()
@@ -305,6 +306,17 @@ export default function StatementPeriodFormPage() {
       if (inst.bonificationApplied > 0) {
         displayRows.push({ key: `${inst.creditCardInstallmentId}-bonif`, type: 'bonification', inst })
       }
+    }
+    if (hasMultipleMembers) {
+      const included = installments.filter(i => i.isIncluded)
+      const subtotal = included.reduce((s, i) => s + (i.actualAmount ?? 0), 0)
+      const bonifications = included.reduce((s, i) => s + (i.actualBonificationAmount ?? 0), 0)
+      displayRows.push({
+        key: `member-subtotal-${memberKey}`,
+        type: 'memberSubtotal',
+        subtotal,
+        bonifications,
+      })
     }
   }
 
@@ -410,9 +422,23 @@ export default function StatementPeriodFormPage() {
                     if (row.type === 'memberHeader') {
                       const colCount = periodIsOpen ? 6 : 5
                       return (
-                        <tr key={row.key} className="bg-muted/30">
-                          <td colSpan={colCount} className="py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                        <tr key={row.key} className="bg-muted/50 border-t-2 border-border">
+                          <td colSpan={colCount} className="py-2.5 px-3 text-sm font-bold tracking-wide">
                             {row.memberName}
+                          </td>
+                        </tr>
+                      )
+                    }
+                    if (row.type === 'memberSubtotal') {
+                      const colCount = periodIsOpen ? 6 : 5
+                      const net = row.subtotal - row.bonifications
+                      return (
+                        <tr key={row.key} className="bg-muted/30 border-b-2 border-border">
+                          <td colSpan={colCount - 1} className="py-2 px-3 text-xs font-semibold text-right">
+                            {t('statements.memberSubtotal')}
+                          </td>
+                          <td className="py-2 pr-3 text-right tabular-nums font-semibold text-sm">
+                            {fmt(net)}
                           </td>
                         </tr>
                       )

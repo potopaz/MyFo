@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useNavigate } from 'react-router-dom'
 import { toast } from 'sonner'
-import { Eye } from 'lucide-react'
+import { Pencil } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -41,15 +41,17 @@ export default function AdminFamiliesPage() {
                 <th className="px-2 h-10 text-left align-middle font-medium whitespace-nowrap">{t('admin.columns.name')}</th>
                 <th className="px-2 h-10 text-left align-middle font-medium whitespace-nowrap">{t('admin.columns.members')}</th>
                 <th className="px-2 h-10 text-left align-middle font-medium whitespace-nowrap">{t('admin.columns.status')}</th>
-                <th className="px-2 h-10 text-left align-middle font-medium whitespace-nowrap">{t('admin.columns.maxMembers')}</th>
-                <th className="px-2 h-10 text-left align-middle font-medium whitespace-nowrap">{t('admin.columns.notes')}</th>
+                <th className="px-2 h-10 text-right align-middle font-medium whitespace-nowrap">{t('admin.columns.subcategories')}</th>
+                <th className="px-2 h-10 text-right align-middle font-medium whitespace-nowrap">{t('admin.columns.costCenters')}</th>
+                <th className="px-2 h-10 text-right align-middle font-medium whitespace-nowrap">{t('admin.columns.movements')}</th>
+                <th className="px-2 h-10 text-right align-middle font-medium whitespace-nowrap">{t('admin.columns.transfers')}</th>
                 <th className="px-2 h-10 text-right align-middle font-medium whitespace-nowrap">{t('admin.columns.actions')}</th>
               </tr>
             </thead>
             <tbody>
               {families.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-2 py-6 text-center text-muted-foreground">
+                  <td colSpan={8} className="px-2 py-6 text-center text-muted-foreground">
                     {t('common.noData')}
                   </td>
                 </tr>
@@ -66,12 +68,10 @@ export default function AdminFamiliesPage() {
                         {f.isEnabled ? t('admin.enabled') : t('admin.disabled')}
                       </Badge>
                     </td>
-                    <td className="px-2 h-10 align-middle text-muted-foreground">
-                      {f.maxMembers ?? '—'}
-                    </td>
-                    <td className="px-2 h-10 align-middle text-muted-foreground max-w-xs truncate">
-                      {f.notes ?? '—'}
-                    </td>
+                    <td className="px-2 h-10 align-middle text-right text-muted-foreground">{f.subcategoryCount}</td>
+                    <td className="px-2 h-10 align-middle text-right text-muted-foreground">{f.costCenterCount}</td>
+                    <td className="px-2 h-10 align-middle text-right text-muted-foreground">{f.movementCount}</td>
+                    <td className="px-2 h-10 align-middle text-right text-muted-foreground">{f.transferCount}</td>
                     <td className="px-2 h-10 align-middle text-right">
                       <Button
                         variant="ghost"
@@ -79,7 +79,7 @@ export default function AdminFamiliesPage() {
                         title={t('admin.columns.actions')}
                         onClick={() => navigate(`/admin/families/${f.familyId}`)}
                       >
-                        <Eye className="h-3.5 w-3.5" />
+                        <Pencil className="h-3.5 w-3.5" />
                       </Button>
                     </td>
                   </tr>

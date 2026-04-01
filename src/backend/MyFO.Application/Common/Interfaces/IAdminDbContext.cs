@@ -14,5 +14,10 @@ public interface IAdminDbContext
     DbSet<FamilyMember> FamilyMembers { get; }
     DbSet<FamilyAdminConfig> FamilyAdminConfigs { get; }
 
+    Task<Dictionary<Guid, int>> GetSubcategoryCountsByFamilyAsync(CancellationToken cancellationToken);
+    Task<Dictionary<Guid, int>> GetCostCenterCountsByFamilyAsync(CancellationToken cancellationToken);
+    Task<Dictionary<Guid, int>> GetMovementCountsByFamilyAsync(CancellationToken cancellationToken);
+    Task<Dictionary<Guid, int>> GetTransferCountsByFamilyAsync(CancellationToken cancellationToken);
+
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

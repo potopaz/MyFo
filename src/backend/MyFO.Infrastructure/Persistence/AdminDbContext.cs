@@ -18,6 +18,28 @@ public class AdminDbContext : DbContext, IAdminDbContext
     public DbSet<FamilyMember> FamilyMembers => Set<FamilyMember>();
     public DbSet<FamilyAdminConfig> FamilyAdminConfigs => Set<FamilyAdminConfig>();
 
+    private record FamilyCount(Guid FamilyId, int Count);
+
+    public async Task<Dictionary<Guid, int>> GetSubcategoryCountsByFamilyAsync(CancellationToken cancellationToken) =>
+        await Database
+            .SqlQueryRaw<FamilyCount>(@"SELECT family_id AS ""FamilyId"", CAST(COUNT(*) AS integer) AS ""Count"" FROM cfg.subcategories WHERE deleted_at IS NULL GROUP BY family_id")
+            .ToDictionaryAsync(r => r.FamilyId, r => r.Count, cancellationToken);
+
+    public async Task<Dictionary<Guid, int>> GetCostCenterCountsByFamilyAsync(CancellationToken cancellationToken) =>
+        await Database
+            .SqlQueryRaw<FamilyCount>(@"SELECT family_id AS ""FamilyId"", CAST(COUNT(*) AS integer) AS ""Count"" FROM cfg.cost_centers WHERE deleted_at IS NULL GROUP BY family_id")
+            .ToDictionaryAsync(r => r.FamilyId, r => r.Count, cancellationToken);
+
+    public async Task<Dictionary<Guid, int>> GetMovementCountsByFamilyAsync(CancellationToken cancellationToken) =>
+        await Database
+            .SqlQueryRaw<FamilyCount>(@"SELECT family_id AS ""FamilyId"", CAST(COUNT(*) AS integer) AS ""Count"" FROM txn.movements WHERE deleted_at IS NULL GROUP BY family_id")
+            .ToDictionaryAsync(r => r.FamilyId, r => r.Count, cancellationToken);
+
+    public async Task<Dictionary<Guid, int>> GetTransferCountsByFamilyAsync(CancellationToken cancellationToken) =>
+        await Database
+            .SqlQueryRaw<FamilyCount>(@"SELECT family_id AS ""FamilyId"", CAST(COUNT(*) AS integer) AS ""Count"" FROM txn.transfers WHERE deleted_at IS NULL GROUP BY family_id")
+            .ToDictionaryAsync(r => r.FamilyId, r => r.Count, cancellationToken);
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfiguration(new FamilyConfiguration());

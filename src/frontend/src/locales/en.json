@@ -308,7 +308,7 @@
       "searchSubcategory": "Search subcategory...",
       "currency": "Currency",
       "searchCurrency": "Search currency...",
-      "totalAmount": "Total amount",
+      "totalAmount": "Total calculated amount",
       "exchangeRatePrimary": "{{currency}} rate",
       "exchangeRateSecondary": "{{currency}} rate",
       "description": "Description",
@@ -764,6 +764,7 @@
     "pendingLabel": "Pending",
     "installments": "Installments",
     "noInstallments": "No installments in this period",
+    "memberSubtotal": "Subtotal",
     "lineItems": "Charges & bonifications",
     "noLineItems": "No charges or bonifications",
     "addLineItem": "Add",
@@ -916,6 +917,12 @@
   },
   "admin": {
     "backToApp": "Back to app",
-    "backToFamilies": "Select family"
+    "backToFamilies": "Select family",
+    "columns": {
+      "subcategories": "Subcategories",
+      "costCenters": "Cost Centers",
+      "movements": "Movements",
+      "transfers": "Transfers"
+    }
   }
 }

@@ -411,6 +411,10 @@ export interface AdminFamilyListItemDto {
   notes: string | null
   disabledAt: string | null
   disabledReason: string | null
+  subcategoryCount: number
+  costCenterCount: number
+  movementCount: number
+  transferCount: number
 }
 
 export interface AdminFamilyDetailDto extends AdminFamilyListItemDto {

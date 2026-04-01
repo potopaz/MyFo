@@ -274,7 +274,7 @@ export default function CreditCardPaymentsPage() {
           setEditingPaymentId(null)
           setForm({
             creditCardId: filterCardId !== '_all_' ? filterCardId : '',
-            paymentDate: new Date().toISOString().slice(0, 10), amount: '', description: '',
+            paymentDate: (() => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}` })(), amount: '', description: '',
             paymentSource: 'CashBox', cashBoxId: '', bankAccountId: '',
             isTotalPayment: false, statementPeriodId: '',
             primaryExchangeRate: '1', secondaryExchangeRate: '1',
