@@ -132,6 +132,7 @@ export default function MovementFormPage() {
   const [auditInfo, setAuditInfo] = useState<{ createdAt: string; createdByName: string | null; modifiedAt: string | null; modifiedByName: string | null } | null>(null)
   const [rowVersion, setRowVersion] = useState<number | null>(null)
   const skipAutoFetchRef = useRef(0)
+  const dateInputRef = useRef<HTMLInputElement>(null)
 
   const [subcategoryOptions, setSubcategoryOptions] = useState<SubcategoryOption[]>([])
   const [cashBoxes, setCashBoxes] = useState<PaymentEntityOption[]>([])
@@ -296,6 +297,11 @@ export default function MovementFormPage() {
     fetchRatesExplicit(form.currencyCode, form.date)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.currencyCode, form.date]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Autofocus en fecha al terminar de cargar
+  useEffect(() => {
+    if (!loading) dateInputRef.current?.focus()
+  }, [loading])
 
   // Atajos de teclado
   useEffect(() => {
@@ -609,7 +615,7 @@ export default function MovementFormPage() {
           <div className="space-y-1.5">
             <Label>{t('movements.form.date')}</Label>
             <Input
-              ref={(el) => { if (el && !loading) el.focus() }}
+              ref={dateInputRef}
               type="date"
               value={form.date}
               onChange={(e) => {
