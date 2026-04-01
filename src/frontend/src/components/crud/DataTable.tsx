@@ -21,6 +21,7 @@ interface DataTableProps<T> {
   emptyMessage?: string
   extraRowActions?: (item: T) => ReactNode
   hideEdit?: boolean
+  readOnly?: boolean
 }
 
 export function DataTable<T>({
@@ -32,6 +33,7 @@ export function DataTable<T>({
   emptyMessage,
   extraRowActions,
   hideEdit,
+  readOnly,
 }: DataTableProps<T>) {
   const { t } = useTranslation()
 
@@ -44,7 +46,7 @@ export function DataTable<T>({
               {col.header}
             </TableHead>
           ))}
-          <TableHead className="w-[80px] text-right">{t('common.actions')}</TableHead>
+          {!readOnly && <TableHead className="w-[80px] text-right">{t('common.actions')}</TableHead>}
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -55,34 +57,36 @@ export function DataTable<T>({
                 {col.render(item)}
               </TableCell>
             ))}
-            <TableCell className="text-right">
-              <div className="flex justify-end gap-1">
-                {extraRowActions?.(item)}
-                {!hideEdit && (
+            {!readOnly && (
+              <TableCell className="text-right">
+                <div className="flex justify-end gap-1">
+                  {extraRowActions?.(item)}
+                  {!hideEdit && (
+                    <Button
+                      variant="ghost"
+                      size="icon-sm"
+                      onClick={() => onEdit(item)}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                  )}
                   <Button
                     variant="ghost"
                     size="icon-sm"
-                    onClick={() => onEdit(item)}
+                    className="text-destructive hover:text-destructive"
+                    onClick={() => onDelete(item)}
                   >
-                    <Pencil className="h-3.5 w-3.5" />
+                    <Trash2 className="h-3.5 w-3.5" />
                   </Button>
-                )}
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  className="text-destructive hover:text-destructive"
-                  onClick={() => onDelete(item)}
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                </Button>
-              </div>
-            </TableCell>
+                </div>
+              </TableCell>
+            )}
           </TableRow>
         ))}
         {data.length === 0 && (
           <TableRow>
             <TableCell
-              colSpan={columns.length + 1}
+              colSpan={readOnly ? columns.length : columns.length + 1}
               className="text-center text-muted-foreground"
             >
               {emptyMessage ?? t('common.noData')}

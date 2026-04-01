@@ -1,4 +1,4 @@
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using MyFO.Application.CreditCards.DTOs;
 
 namespace MyFO.Application.CreditCards.Commands;

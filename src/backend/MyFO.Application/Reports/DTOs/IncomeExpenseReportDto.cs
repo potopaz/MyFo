@@ -23,6 +23,9 @@ public class IncomeExpenseReportDto
 
     /// <summary>Income evolution over time</summary>
     public List<TimePointDto> IncomeEvolution { get; set; } = [];
+
+    /// <summary>Expense breakdown by cost center (for donut chart)</summary>
+    public List<NameAmountDto> ExpenseByCostCenter { get; set; } = [];
 }
 
 public class CategoryExpenseDto

@@ -96,7 +96,7 @@ function LoadingSkeleton() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function FlujoCajaPage() {
+export default function CashFlowPage() {
   const [dateRange, setDateRange] = useState<DateRange>(defaultDateRange())
   const [currency, setCurrency] = useState('')
   const [primaryCurrency, setPrimaryCurrency] = useState('ARS')
@@ -144,16 +144,7 @@ export default function FlujoCajaPage() {
     ...pt.values,
   }))
 
-  // Group futureInstallments by label
-  const futureByLabel = (data?.futureInstallments ?? []).reduce<Record<string, Record<string, number>>>((acc, item) => {
-    if (!acc[item.label]) acc[item.label] = {}
-    acc[item.label][item.cardName] = (acc[item.label][item.cardName] ?? 0) + item.amount
-    return acc
-  }, {})
-  const futureData = Object.entries(futureByLabel).map(([label, cards]) => ({ label, ...cards }))
-  const cardNames = Array.from(new Set((data?.futureInstallments ?? []).map((f) => f.cardName)))
-
-  const isEmpty = data && data.cashFlow.length === 0 && data.futureInstallments.length === 0
+  const isEmpty = data && data.cashFlow.length === 0
 
   return (
     <div className="space-y-4 pb-24">
@@ -194,28 +185,6 @@ export default function FlujoCajaPage() {
                 </ComposedChart>
               </ResponsiveContainer>
               <p className="text-[11px] text-muted-foreground mt-1">Barras = flujo por período. Línea verde = neto (eje derecho).</p>
-            </ChartCard>
-
-            {/* Cuotas Futuras TC */}
-            <ChartCard title="Cuotas Futuras por Tarjeta" className="lg:col-span-2">
-              {futureData.length === 0 ? (
-                <div className="flex items-center justify-center h-[200px] text-muted-foreground text-sm">
-                  Sin cuotas futuras proyectadas
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={futureData} barCategoryGap="20%">
-                    <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                    <XAxis dataKey="label" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                    <YAxis tickFormatter={fmtShort} tick={{ fontSize: 11 }} width={50} axisLine={false} tickLine={false} />
-                    <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))' }} />
-                    <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-                    {cardNames.map((name, i) => (
-                      <Bar key={name} dataKey={name} stackId="a" fill={i === 0 ? EMERALD_COLOR : COLORS[i % COLORS.length]} radius={i === cardNames.length - 1 ? [3, 3, 0, 0] : undefined} />
-                    ))}
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
             </ChartCard>
 
             {/* Medios de Pago */}

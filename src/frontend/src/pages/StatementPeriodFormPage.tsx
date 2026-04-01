@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -91,8 +91,6 @@ export default function StatementPeriodFormPage() {
   const [editingType, setEditingType] = useState<'actual' | 'bonification'>('actual')
   const [editAmountValue, setEditAmountValue] = useState<number | null>(null)
 
-  const togglingRef = useRef(false)
-
   const loadDetail = useCallback(async (periodId: string) => {
     try {
       const { data } = await api.get<StatementPeriodDetailDto>(`/statementperiods/${periodId}`)
@@ -151,37 +149,64 @@ export default function StatementPeriodFormPage() {
     }
   }
 
-  // ── Toggle installment inclusion ──
+  // ── Recalculate totals from local state ──
+  const recalcTotals = (d: StatementPeriodDetailDto): StatementPeriodDetailDto => {
+    const included = d.installments.filter(i => i.isIncluded)
+    const installmentsTotal = included.reduce((s, i) => s + (i.actualAmount ?? 0), 0)
+    const instBonif = included.reduce((s, i) => s + (i.actualBonificationAmount ?? 0), 0)
+    const chargesTotal = d.lineItems.filter(li => li.lineType === 'Charge').reduce((s, li) => s + li.amount, 0)
+    const lineItemBonif = d.lineItems.filter(li => li.lineType === 'Bonification').reduce((s, li) => s + li.amount, 0)
+    const bonificationsTotal = instBonif + lineItemBonif
+    const statementTotal = d.previousBalance + installmentsTotal + chargesTotal - bonificationsTotal
+    const pendingBalance = statementTotal - d.paymentsTotal
+    return { ...d, installmentsTotal, chargesTotal, bonificationsTotal, statementTotal, pendingBalance }
+  }
+
+  // ── Toggle installment inclusion (optimistic) ──
   const toggleInclusion = async (inst: StatementInstallmentDto) => {
-    if (!detail || togglingRef.current) return
-    togglingRef.current = true
+    if (!detail) return
+    const newIncluded = !inst.isIncluded
+    const updatedInstallments = detail.installments.map(i => {
+      if (i.creditCardInstallmentId !== inst.creditCardInstallmentId) return i
+      if (newIncluded) {
+        return { ...i, isIncluded: true, actualAmount: i.actualAmount ?? i.projectedAmount }
+      }
+      return { ...i, isIncluded: false, actualAmount: null, actualBonificationAmount: null, isBonificationIncluded: false }
+    })
+    setDetail(recalcTotals({ ...detail, installments: updatedInstallments }))
+
     try {
       await api.post(
         `/statementperiods/${detail.statementPeriodId}/installments/${inst.creditCardInstallmentId}/toggle-inclusion`,
-        { include: !inst.isIncluded }
+        { include: newIncluded }
       )
-      await loadDetail(detail.statementPeriodId)
     } catch (err) {
       toast.error(extractError(err))
-    } finally {
-      togglingRef.current = false
+      loadDetail(detail.statementPeriodId)
     }
   }
 
-  // ── Toggle bonification inclusion ──
+  // ── Toggle bonification inclusion (optimistic) ──
   const toggleBonification = async (inst: StatementInstallmentDto) => {
-    if (!detail || togglingRef.current) return
-    togglingRef.current = true
+    if (!detail) return
+    const newIncluded = !inst.isBonificationIncluded
+    const updatedInstallments = detail.installments.map(i => {
+      if (i.creditCardInstallmentId !== inst.creditCardInstallmentId) return i
+      if (newIncluded) {
+        return { ...i, isBonificationIncluded: true, actualBonificationAmount: i.actualBonificationAmount ?? i.bonificationApplied }
+      }
+      return { ...i, isBonificationIncluded: false, actualBonificationAmount: null }
+    })
+    setDetail(recalcTotals({ ...detail, installments: updatedInstallments }))
+
     try {
       await api.post(
         `/statementperiods/${detail.statementPeriodId}/installments/${inst.creditCardInstallmentId}/toggle-bonification`,
-        { include: !inst.isBonificationIncluded }
+        { include: newIncluded }
       )
-      await loadDetail(detail.statementPeriodId)
     } catch (err) {
       toast.error(extractError(err))
-    } finally {
-      togglingRef.current = false
+      loadDetail(detail.statementPeriodId)
     }
   }
 
@@ -252,17 +277,34 @@ export default function StatementPeriodFormPage() {
 
   if (!detail) return null
 
-  // Build display rows: each installment gets one row, + bonification row if applicable
-  type DisplayRow = {
-    key: string
-    type: 'installment' | 'bonification'
-    inst: StatementInstallmentDto
-  }
+  // Group installments by member, build display rows with group headers
+  type DisplayRow =
+    | { key: string; type: 'memberHeader'; memberName: string }
+    | { key: string; type: 'installment'; inst: StatementInstallmentDto }
+    | { key: string; type: 'bonification'; inst: StatementInstallmentDto }
+
   const displayRows: DisplayRow[] = []
+  const memberGroups = new Map<string, StatementInstallmentDto[]>()
   for (const inst of detail.installments) {
-    displayRows.push({ key: inst.creditCardInstallmentId, type: 'installment', inst })
-    if (inst.bonificationApplied > 0) {
-      displayRows.push({ key: `${inst.creditCardInstallmentId}-bonif`, type: 'bonification', inst })
+    const memberKey = inst.creditCardMemberName || ''
+    if (!memberGroups.has(memberKey)) memberGroups.set(memberKey, [])
+    memberGroups.get(memberKey)!.push(inst)
+  }
+  const hasMultipleMembers = memberGroups.size > 1 || (memberGroups.size === 1 && !memberGroups.has(''))
+
+  for (const [memberKey, installments] of memberGroups) {
+    if (hasMultipleMembers) {
+      displayRows.push({
+        key: `member-${memberKey}`,
+        type: 'memberHeader',
+        memberName: memberKey || t('statements.noMember'),
+      })
+    }
+    for (const inst of installments) {
+      displayRows.push({ key: inst.creditCardInstallmentId, type: 'installment', inst })
+      if (inst.bonificationApplied > 0) {
+        displayRows.push({ key: `${inst.creditCardInstallmentId}-bonif`, type: 'bonification', inst })
+      }
     }
   }
 
@@ -365,6 +407,16 @@ export default function StatementPeriodFormPage() {
                 </thead>
                 <tbody>
                   {displayRows.map((row) => {
+                    if (row.type === 'memberHeader') {
+                      const colCount = periodIsOpen ? 6 : 5
+                      return (
+                        <tr key={row.key} className="bg-muted/30">
+                          <td colSpan={colCount} className="py-2 px-3 text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            {row.memberName}
+                          </td>
+                        </tr>
+                      )
+                    }
                     if (row.type === 'installment') {
                       const inst = row.inst
                       const included = inst.isIncluded

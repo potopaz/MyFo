@@ -33,6 +33,8 @@ public class DrilldownMovementDto
     public string? Description { get; set; }
     public string SubcategoryName { get; set; } = string.Empty;
     public string CategoryName { get; set; } = string.Empty;
+    public string? CostCenterName { get; set; }
+    public bool? IsOrdinary { get; set; }
     public decimal Amount { get; set; }
     public string CurrencyCode { get; set; } = string.Empty;
     public string MovementType { get; set; } = string.Empty;
@@ -42,5 +44,7 @@ public class DrilldownResultDto
 {
     public int TotalCount { get; set; }
     public decimal TotalAmount { get; set; }
+    /// <summary>Signed net: income positive, expense negative</summary>
+    public decimal NetAmount { get; set; }
     public List<DrilldownMovementDto> Items { get; set; } = [];
 }

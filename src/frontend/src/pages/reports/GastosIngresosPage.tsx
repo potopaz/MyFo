@@ -5,7 +5,7 @@ import {
   ResponsiveContainer, Tooltip,
   BarChart, AreaChart, PieChart,
   Bar, Area, Pie, Cell,
-  XAxis, YAxis, CartesianGrid, Legend,
+  XAxis, YAxis, CartesianGrid,
   Treemap,
 } from 'recharts'
 import { TrendingUp, TrendingDown } from 'lucide-react'
@@ -163,7 +163,7 @@ interface DrilldownState {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function GastosIngresosPage() {
+export default function IncomeExpensePage() {
   const [dateRange, setDateRange] = useState<DateRange>(defaultDateRange())
   const [currency, setCurrency] = useState('')
   const [primaryCurrency, setPrimaryCurrency] = useState('ARS')
@@ -230,11 +230,10 @@ export default function GastosIngresosPage() {
     color: COLORS[i % COLORS.length],
   }))
 
-  // Top 10 subcategories sorted desc
+  // Top 10 subcategories sorted desc (largest at top)
   const top10Subcats = [...(data?.expenseBySubcategory ?? [])]
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 10)
-    .reverse()
 
   // OrdVsExtra pie (filter 0s)
   const ordVsExtraData = [
@@ -242,15 +241,6 @@ export default function GastosIngresosPage() {
     { name: 'Extraordinario', value: data?.ordVsExtra.extraordinary ?? 0 },
     { name: 'Sin especificar', value: data?.ordVsExtra.unspecified ?? 0 },
   ].filter((d) => d.value > 0)
-
-  // Category evolution: extract keys from first item
-  const catEvoKeys = data?.categoryEvolution.length
-    ? Object.keys(data.categoryEvolution[0].values)
-    : []
-  const catEvoData = (data?.categoryEvolution ?? []).map((pt) => ({
-    label: pt.label,
-    ...pt.values,
-  }))
 
   // Resultado
   const resultado = (data?.totalIncome ?? 0) - (data?.totalExpense ?? 0)
@@ -291,6 +281,22 @@ export default function GastosIngresosPage() {
             />
           </div>
 
+          {/* Gastos por Categoría - Treemap */}
+          <ChartCard title="Gastos por Categoría">
+            <ResponsiveContainer width="100%" height={300}>
+              <Treemap
+                data={treemapData}
+                dataKey="size"
+                content={<TreemapCell />}
+              >
+                <Tooltip
+                  formatter={(v: number) => [fmtCurrency(v, currency), 'Gasto']}
+                  contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                />
+              </Treemap>
+            </ResponsiveContainer>
+          </ChartCard>
+
           <div className="grid gap-4 lg:grid-cols-2">
             {/* Top 10 Subcategorías */}
             <ChartCard title="Top 10 Subcategorías de Gasto">
@@ -299,11 +305,12 @@ export default function GastosIngresosPage() {
                   <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" horizontal={false} />
                   <XAxis type="number" tickFormatter={fmtShort} tick={{ fontSize: 11 }} axisLine={false} />
                   <YAxis type="category" dataKey="name" width={90} tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))' }} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'rgba(0,0,0,0.05)' }} />
                   <Bar
                     dataKey="amount"
                     name="Gasto"
                     fill={EXPENSE_COLOR}
+                    activeBar={{ fill: EXPENSE_COLOR, fillOpacity: 0.7 }}
                     radius={[0, 4, 4, 0]}
                     barSize={18}
                     onClick={(entry: { name: string; amount: number }) => {
@@ -328,7 +335,8 @@ export default function GastosIngresosPage() {
                       paddingAngle={3}
                       strokeWidth={0}
                       onClick={(entry: { name: string }) => {
-                        openDrilldown(entry.name, 'ordinary', entry.name, 'Expense')
+                        const dimValue = entry.name === 'Ordinario' ? 'true' : entry.name === 'Extraordinario' ? 'false' : 'null'
+                        openDrilldown(entry.name, 'ordinary', dimValue, 'Expense')
                       }}
                       style={{ cursor: 'pointer' }}
                     >
@@ -354,46 +362,47 @@ export default function GastosIngresosPage() {
               </div>
             </ChartCard>
 
-            {/* Gastos por Categoría - Treemap */}
-            <ChartCard title="Gastos por Categoría" className="lg:col-span-2">
-              <ResponsiveContainer width="100%" height={300}>
-                <Treemap
-                  data={treemapData}
-                  dataKey="size"
-                  content={<TreemapCell />}
-                >
-                  <Tooltip
-                    formatter={(v: number) => [fmtCurrency(v, currency), 'Gasto']}
-                    contentStyle={{ fontSize: 12, borderRadius: 8 }}
-                  />
-                </Treemap>
-              </ResponsiveContainer>
-            </ChartCard>
-
-            {/* Evolución de Gastos por Categoría */}
-            <ChartCard title="Evolución de Gastos por Categoría" className="lg:col-span-2">
-              <ResponsiveContainer width="100%" height={320}>
-                <BarChart data={catEvoData} barCategoryGap="20%">
-                  <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" vertical={false} />
-                  <XAxis dataKey="label" tick={{ fontSize: 11 }} axisLine={false} tickLine={false} />
-                  <YAxis tickFormatter={fmtShort} tick={{ fontSize: 11 }} width={50} axisLine={false} tickLine={false} />
-                  <Tooltip content={<CustomTooltip />} cursor={{ fill: 'hsl(var(--muted))' }} />
-                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-                  {catEvoKeys.map((k, i) => (
-                    <Bar
-                      key={k}
-                      dataKey={k}
-                      stackId="a"
-                      fill={COLORS[i % COLORS.length]}
-                      onClick={() => {
-                        openDrilldown(k, 'category', k, 'Expense')
-                      }}
-                      style={{ cursor: 'pointer' }}
-                    />
-                  ))}
-                </BarChart>
-              </ResponsiveContainer>
-            </ChartCard>
+            {/* Gastos por Centro de Costo */}
+            {(data?.expenseByCostCenter ?? []).length > 0 && (
+              <ChartCard title="Gastos por Centro de Costo">
+                <div className="flex items-center gap-6 pt-2">
+                  <ResponsiveContainer width={180} height={180}>
+                    <PieChart>
+                      <Pie
+                        data={data?.expenseByCostCenter ?? []}
+                        dataKey="amount"
+                        nameKey="name"
+                        cx="50%" cy="50%"
+                        innerRadius={50} outerRadius={80}
+                        paddingAngle={3}
+                        strokeWidth={0}
+                        onClick={(entry: { name: string }) => {
+                          openDrilldown(entry.name, 'costcenter', entry.name, 'Expense')
+                        }}
+                        style={{ cursor: 'pointer' }}
+                      >
+                        {(data?.expenseByCostCenter ?? []).map((_, i) => (
+                          <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(v: number) => [fmtCurrency(v, currency), '']}
+                        contentStyle={{ fontSize: 12, borderRadius: 8 }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                  <div className="space-y-2 text-sm overflow-y-auto max-h-[180px]">
+                    {(data?.expenseByCostCenter ?? []).map((d, i) => (
+                      <div key={d.name} className="flex items-center gap-2">
+                        <div className="w-3 h-3 rounded-sm shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
+                        <span className="text-muted-foreground truncate">{d.name}</span>
+                        <span className="font-semibold ml-2 whitespace-nowrap">{fmtCurrency(d.amount, currency)}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </ChartCard>
+            )}
 
             {/* Fuentes de Ingreso */}
             <ChartCard title="Fuentes de Ingreso">

@@ -16,6 +16,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { useAuth } from '@/contexts/AuthContext'
 import api from '@/lib/api'
 import { loadFamilyCurrencyOptions } from '@/lib/currency-options'
 import { HelpCircle, ShieldCheck } from 'lucide-react'
@@ -120,7 +121,8 @@ function PermissionsDialog({ cashBox, onClose }: { cashBox: CashBoxDto; onClose:
 
 export default function CashBoxesPage() {
   const { t } = useTranslation()
-  const fetchItems = useCallback(() => api.get<CashBoxDto[]>('/cashboxes').then((r) => r.data), [])
+  const { isFamilyAdmin } = useAuth()
+  const fetchItems = useCallback(() => api.get<CashBoxDto[]>('/cashboxes', { params: { includeAll: true } }).then((r) => r.data), [])
   const [permissionsCashBox, setPermissionsCashBox] = useState<CashBoxDto | null>(null)
 
   const columns: ColumnDef<CashBoxDto>[] = useMemo(() => [
@@ -187,7 +189,8 @@ export default function CashBoxesPage() {
         newItemLabel={t('cashBoxes.new')}
         createTitle={t('cashBoxes.createTitle')}
         editTitle={t('cashBoxes.editTitle')}
-        extraRowActions={(item) => (
+        readOnly={!isFamilyAdmin}
+        extraRowActions={isFamilyAdmin ? (item) => (
           <Button
             variant="ghost"
             size="icon-sm"
@@ -196,7 +199,7 @@ export default function CashBoxesPage() {
           >
             <ShieldCheck className="h-3.5 w-3.5" />
           </Button>
-        )}
+        ) : undefined}
       />
 
       {permissionsCashBox && (

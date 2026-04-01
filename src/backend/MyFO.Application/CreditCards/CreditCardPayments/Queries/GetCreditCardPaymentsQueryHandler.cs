@@ -1,4 +1,4 @@
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using Microsoft.EntityFrameworkCore;
 using MyFO.Application.Common.Interfaces;
 using MyFO.Application.CreditCards.CreditCardPayments.DTOs;
@@ -15,6 +15,7 @@ public class GetCreditCardPaymentsQueryHandler : IRequestHandler<GetCreditCardPa
     {
         var query = _db.CreditCardPayments
             .Include(p => p.CreditCard)
+            .Include(p => p.StatementPeriod)
             .AsQueryable();
 
         if (request.CreditCardId.HasValue)
@@ -52,6 +53,7 @@ public class GetCreditCardPaymentsQueryHandler : IRequestHandler<GetCreditCardPa
             BankAccountName = p.BankAccountId.HasValue && bankNames.TryGetValue(p.BankAccountId.Value, out var baName) ? baName : null,
             IsTotalPayment = p.IsTotalPayment,
             StatementPeriodId = p.StatementPeriodId,
+            IsPeriodClosed = p.StatementPeriod != null && p.StatementPeriod.ClosedAt != null,
             PrimaryExchangeRate = p.PrimaryExchangeRate,
             SecondaryExchangeRate = p.SecondaryExchangeRate,
             AmountInPrimary = p.AmountInPrimary,

@@ -1,4 +1,4 @@
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using MyFO.Application.Transactions.Movements.DTOs;
 
 namespace MyFO.Application.Transactions.Movements.Commands;

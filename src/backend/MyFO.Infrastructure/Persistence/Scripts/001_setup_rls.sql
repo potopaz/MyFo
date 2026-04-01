@@ -92,10 +92,20 @@ DECLARE
         'txn.credit_card_installments',
         'txn.credit_card_payments',
         'txn.statement_periods',
-        'txn.statement_line_items'
+        'txn.statement_line_items',
+        'txn.statement_payment_allocations'
     ];
 BEGIN
     FOREACH tbl IN ARRAY tenant_tables LOOP
+        -- Skip tables that don't exist yet (created by later migrations)
+        IF NOT EXISTS (
+            SELECT 1 FROM information_schema.tables
+            WHERE table_schema || '.' || table_name = tbl
+        ) THEN
+            RAISE NOTICE 'Skipping % — table does not exist yet', tbl;
+            CONTINUE;
+        END IF;
+
         EXECUTE format('ALTER TABLE %s ENABLE ROW LEVEL SECURITY', tbl);
 
         -- Drop old combined policy

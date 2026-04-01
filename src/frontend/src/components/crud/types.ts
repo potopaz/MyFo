@@ -56,4 +56,6 @@ export interface ConfigPageProps<T> {
   extraRowActions?: (item: T) => ReactNode
   /** Hide the edit (pencil) button in each row */
   hideEdit?: boolean
+  /** Hide all write actions (new button, edit, delete, extraRowActions). For read-only views. */
+  readOnly?: boolean
 }

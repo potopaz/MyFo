@@ -366,29 +366,6 @@ export default function FrequentMovementFormPage() {
           </div>
         </div>
 
-        {/* MovementType extra (si Both) */}
-        {showMovementType && (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>{t('frequentMovements.form.type')}</Label>
-              <Select
-                value={form.movementType}
-                onValueChange={(v) => setForm((p): FrequentMovementForm => ({ ...p, movementType: v }))}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue>
-                    {{ Income: t('frequentMovements.form.income'), Expense: t('frequentMovements.form.expense'), '': t('frequentMovements.form.selectType') }[form.movementType]}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Income">{t('frequentMovements.form.income')}</SelectItem>
-                  <SelectItem value="Expense">{t('frequentMovements.form.expense')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
-
         {/* Moneda + Importe */}
         <div className="grid grid-cols-2 gap-4">
           <div className="space-y-1.5">

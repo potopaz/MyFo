@@ -67,7 +67,7 @@
     "analysis": "Análisis por período",
     "reportsGastos": "Gastos e Ingresos",
     "reportsFlujo": "Flujo de Caja",
-    "reportsTarjetas": "Tarjetas y CC",
+    "reportsTarjetas": "Tarjetas de Crédito",
     "reportsPatrimonio": "Patrimonio",
     "admin": "Administración",
     "members": "Miembros",
@@ -880,6 +880,7 @@
     "primaryExchangeRate": "Cotizacion primaria",
     "secondaryExchangeRate": "Cotizacion secundaria",
     "installmentCols": {
+      "member": "Integrante",
       "description": "Descripcion",
       "installment": "Cuota",
       "projected": "Proyectado",
@@ -887,6 +888,7 @@
       "effective": "Efectivo",
       "actual": "Real"
     },
+    "noMember": "Sin integrante",
     "status": {
       "label": "Estado",
       "open": "Abierto",

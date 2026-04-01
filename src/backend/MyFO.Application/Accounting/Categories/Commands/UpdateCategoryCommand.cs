@@ -1,4 +1,4 @@
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using MyFO.Application.Accounting.Categories.DTOs;
 
 namespace MyFO.Application.Accounting.Categories.Commands;

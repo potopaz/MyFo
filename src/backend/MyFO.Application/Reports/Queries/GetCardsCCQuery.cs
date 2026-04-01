@@ -1,4 +1,4 @@
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using MyFO.Application.Reports.DTOs;
 
 namespace MyFO.Application.Reports.Queries;

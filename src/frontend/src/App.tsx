@@ -25,10 +25,10 @@ import StatementPeriodFormPage from '@/pages/StatementPeriodFormPage'
 import CreditCardPaymentsPage from '@/pages/CreditCardPaymentsPage'
 import AnalysisPage from '@/pages/AnalysisPage'
 import ChartsPrototypePage from '@/pages/ChartsPrototypePage'
-import GastosIngresosPage from '@/pages/reports/GastosIngresosPage'
-import FlujoCajaPage from '@/pages/reports/FlujoCajaPage'
-import TarjetasCCPage from '@/pages/reports/TarjetasCCPage'
-import PatrimonioPage from '@/pages/reports/PatrimonioPage'
+import IncomeExpensePage from '@/pages/reports/IncomeExpensePage'
+// import CashFlowPage from '@/pages/reports/CashFlowPage'  // TODO: re-enable after polish
+import CreditCardReportPage from '@/pages/reports/CreditCardReportPage'
+// import PatrimonyPage from '@/pages/reports/PatrimonyPage'  // TODO: re-enable after polish
 import AdminFamiliesPage from '@/pages/AdminFamiliesPage'
 import AdminFamilyDetailPage from '@/pages/AdminFamilyDetailPage'
 import JoinPage from '@/pages/JoinPage'
@@ -121,10 +121,10 @@ export default function App() {
               <Route path="transfers/new" element={<TransferFormPage />} />
               <Route path="transfers/:id/edit" element={<TransferFormPage />} />
               <Route path="analysis" element={<Navigate to="/reports/gastos" replace />} />
-              <Route path="reports/gastos" element={<GastosIngresosPage />} />
-              <Route path="reports/flujo" element={<FlujoCajaPage />} />
-              <Route path="reports/tarjetas" element={<TarjetasCCPage />} />
-              <Route path="reports/patrimonio" element={<PatrimonioPage />} />
+              <Route path="reports/gastos" element={<IncomeExpensePage />} />
+              {/* <Route path="reports/flujo" element={<CashFlowPage />} /> */}
+              <Route path="reports/tarjetas" element={<CreditCardReportPage />} />
+              {/* <Route path="reports/patrimonio" element={<PatrimonyPage />} /> */}
               <Route path="charts-prototype" element={<ChartsPrototypePage />} />
               <Route path="cash-boxes" element={<CashBoxesPage />} />
               <Route path="bank-accounts" element={<BankAccountsPage />} />

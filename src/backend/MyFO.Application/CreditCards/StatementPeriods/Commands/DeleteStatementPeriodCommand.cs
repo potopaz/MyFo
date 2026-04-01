@@ -1,4 +1,4 @@
-using MediatR;
+using MyFO.Application.Common.Mediator;
 
 namespace MyFO.Application.CreditCards.StatementPeriods.Commands;
 

@@ -1,4 +1,4 @@
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using Microsoft.EntityFrameworkCore;
 using MyFO.Application.Common.Interfaces;
 using MyFO.Application.Reports.DTOs;
@@ -27,9 +27,136 @@ public class GetDrilldownQueryHandler : IRequestHandler<GetDrilldownQuery, Drill
         var useSecondary = !string.IsNullOrEmpty(family.SecondaryCurrencyCode)
                            && request.Currency == family.SecondaryCurrencyCode;
 
-        // Base query
+        var today = DateOnly.FromDateTime(DateTime.UtcNow);
+
+        // Base query (date-range applies; overridden for creditcard/installment cases below)
         var query = _db.Movements
             .Where(m => m.Date >= request.From && m.Date <= request.To);
+
+        // Creditcard dimension: show movements contributing to current outstanding debt —
+        // purchase date may predate the selected period, so we override the date-range filter.
+        Guid filterCardId = Guid.Empty;
+        bool isCreditCard = request.Dimension == "creditcard"
+            && Guid.TryParse(request.DimensionValue, out filterCardId);
+
+        // Credit card drilldown: show installment-level rows with converted amounts
+        // so totals match the chart (which sums pending installments, not full movement amounts).
+        if (isCreditCard)
+        {
+            // Build installment query — optionally filtered by month
+            DateOnly? instMonthStart = null;
+            DateOnly? instMonthEnd = null;
+            if (!string.IsNullOrEmpty(request.InstallmentMonth)
+                && DateOnly.TryParseExact(request.InstallmentMonth + "-01", "yyyy-MM-dd", out var instMonth))
+            {
+                instMonthStart = instMonth;
+                instMonthEnd = instMonth.AddMonths(1).AddDays(-1);
+            }
+
+            var maxFutureDate = today.AddMonths(12);
+
+            var installmentData = await (
+                from i in _db.CreditCardInstallments
+                where i.ActualAmount == null
+                      && i.EstimatedDate >= today
+                      && i.EstimatedDate <= maxFutureDate
+                      && (instMonthStart == null || (i.EstimatedDate >= instMonthStart && i.EstimatedDate <= instMonthEnd))
+                join p in _db.MovementPayments on i.MovementPaymentId equals p.MovementPaymentId
+                where p.CreditCardId == filterCardId
+                join m in _db.Movements on p.MovementId equals m.MovementId
+                select new
+                {
+                    i.CreditCardInstallmentId,
+                    i.EffectiveAmount,
+                    i.InstallmentNumber,
+                    i.EstimatedDate,
+                    i.MovementPaymentId,
+                    m.MovementId,
+                    m.Date,
+                    m.Description,
+                    m.SubcategoryId,
+                    m.CostCenterId,
+                    m.IsOrdinary,
+                    m.Amount,
+                    m.AmountInPrimary,
+                    m.AmountInSecondary,
+                    m.MovementType,
+                }
+            ).ToListAsync(ct);
+
+            // Total installments per payment for "Cuota X/Y" display
+            var paymentIds = installmentData.Select(x => x.MovementPaymentId).Distinct().ToList();
+            var totalByPayment = await _db.CreditCardInstallments
+                .Where(i => paymentIds.Contains(i.MovementPaymentId))
+                .GroupBy(i => i.MovementPaymentId)
+                .Select(g => new { PaymentId = g.Key, Total = g.Count() })
+                .ToListAsync(ct);
+            var totalMap = totalByPayment.ToDictionary(x => x.PaymentId, x => x.Total);
+
+            // Load subcategory/category/cost-center maps
+            var subIds = installmentData.Select(x => x.SubcategoryId).Distinct().ToList();
+            var subcatMap2 = await _db.Subcategories
+                .Where(s => subIds.Contains(s.SubcategoryId))
+                .Select(s => new { s.SubcategoryId, s.Name, s.CategoryId })
+                .ToListAsync(ct);
+            var catIds = subcatMap2.Select(s => s.CategoryId).Distinct().ToList();
+            var catMap2 = await _db.Categories
+                .Where(c => catIds.Contains(c.CategoryId))
+                .Select(c => new { c.CategoryId, c.Name })
+                .ToListAsync(ct);
+            var ccIds = installmentData.Where(x => x.CostCenterId.HasValue).Select(x => x.CostCenterId!.Value).Distinct().ToList();
+            var ccMap2 = await _db.CostCenters
+                .Where(cc => ccIds.Contains(cc.CostCenterId))
+                .Select(cc => new { cc.CostCenterId, cc.Name })
+                .ToListAsync(ct);
+
+            // Build installment-level rows with converted amounts
+            var instRows = installmentData.Select(x =>
+            {
+                var sub = subcatMap2.FirstOrDefault(s => s.SubcategoryId == x.SubcategoryId);
+                var cat = sub is not null ? catMap2.FirstOrDefault(c => c.CategoryId == sub.CategoryId) : null;
+                var cc = x.CostCenterId.HasValue ? ccMap2.FirstOrDefault(c => c.CostCenterId == x.CostCenterId.Value) : null;
+                var totalInst = totalMap.GetValueOrDefault(x.MovementPaymentId, 1);
+
+                // Convert installment amount to report currency (same formula as chart)
+                var convertedAmount = x.Amount > 0
+                    ? x.EffectiveAmount * (useSecondary ? x.AmountInSecondary : x.AmountInPrimary) / x.Amount
+                    : x.EffectiveAmount;
+
+                var desc = x.Description ?? "";
+                if (totalInst > 1)
+                    desc += $" (Cuota {x.InstallmentNumber}/{totalInst})";
+
+                return new DrilldownMovementDto
+                {
+                    MovementId = x.MovementId,
+                    Date = x.EstimatedDate,
+                    Description = desc,
+                    SubcategoryName = sub?.Name ?? "(Sin subcategoría)",
+                    CategoryName = cat?.Name ?? "(Sin categoría)",
+                    CostCenterName = cc?.Name,
+                    IsOrdinary = x.IsOrdinary,
+                    Amount = convertedAmount,
+                    CurrencyCode = request.Currency,
+                    MovementType = x.MovementType.ToString(),
+                };
+            })
+            .OrderBy(x => x.Date)
+            .ThenByDescending(x => x.Amount)
+            .ToList();
+
+            var instTotalAmount = instRows.Sum(r => r.Amount);
+            var instPage = Math.Max(1, request.Page);
+            var instPageSize = Math.Clamp(request.PageSize, 1, 200);
+
+            return new DrilldownResultDto
+            {
+                TotalCount = instRows.Count,
+                TotalAmount = instTotalAmount,
+                NetAmount = -instTotalAmount, // CC installments are always expense
+                Items = instRows.Skip((instPage - 1) * instPageSize).Take(instPageSize).ToList(),
+            };
+        }
 
         // Movement type filter
         if (!string.IsNullOrEmpty(request.MovementType))
@@ -87,13 +214,16 @@ public class GetDrilldownQueryHandler : IRequestHandler<GetDrilldownQuery, Drill
                 "costcenter"  => rows.Where(r => r.CostCenterName == request.DimensionValue).ToList(),
                 "ordinary"    => request.DimensionValue == "true"
                     ? rows.Where(r => r.Movement.IsOrdinary == true).ToList()
-                    : rows.Where(r => r.Movement.IsOrdinary == false).ToList(),
+                    : request.DimensionValue == "false"
+                        ? rows.Where(r => r.Movement.IsOrdinary == false).ToList()
+                        : rows.Where(r => r.Movement.IsOrdinary == null).ToList(),
                 _ => rows
             };
         }
 
         var totalCount = rows.Count;
         var totalAmount = rows.Sum(r => r.Amount);
+        var netAmount = rows.Sum(r => r.Movement.MovementType == MovementType.Income ? r.Amount : -r.Amount);
 
         var page = Math.Max(1, request.Page);
         var pageSize = Math.Clamp(request.PageSize, 1, 200);
@@ -107,8 +237,10 @@ public class GetDrilldownQueryHandler : IRequestHandler<GetDrilldownQuery, Drill
                 Description = r.Movement.Description,
                 SubcategoryName = r.SubcategoryName,
                 CategoryName = r.CategoryName,
+                CostCenterName = r.CostCenterName,
+                IsOrdinary = r.Movement.IsOrdinary,
                 Amount = r.Amount,
-                CurrencyCode = r.Movement.CurrencyCode,
+                CurrencyCode = request.Currency,  // amount is already converted to report currency
                 MovementType = r.Movement.MovementType.ToString(),
             })
             .ToList();
@@ -117,6 +249,7 @@ public class GetDrilldownQueryHandler : IRequestHandler<GetDrilldownQuery, Drill
         {
             TotalCount = totalCount,
             TotalAmount = totalAmount,
+            NetAmount = netAmount,
             Items = items,
         };
     }

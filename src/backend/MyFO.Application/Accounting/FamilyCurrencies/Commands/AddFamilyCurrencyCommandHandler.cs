@@ -1,4 +1,4 @@
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using Microsoft.EntityFrameworkCore;
 using MyFO.Application.Accounting.FamilyCurrencies.DTOs;
 using MyFO.Application.Common.Interfaces;

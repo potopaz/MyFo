@@ -40,6 +40,7 @@ export function ConfigPage<T>({
   mapItemToForm,
   extraRowActions,
   hideEdit,
+  readOnly,
 }: ConfigPageProps<T>) {
   const { t } = useTranslation()
   const [items, setItems] = useState<T[]>([])
@@ -143,10 +144,12 @@ export function ConfigPage<T>({
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">{title}</h1>
-        <Button onClick={openCreate}>
-          <Plus className="mr-2 h-4 w-4" />
-          {newItemLabel}
-        </Button>
+        {!readOnly && (
+          <Button onClick={openCreate}>
+            <Plus className="mr-2 h-4 w-4" />
+            {newItemLabel}
+          </Button>
+        )}
       </div>
 
       {/* Search */}
@@ -163,6 +166,7 @@ export function ConfigPage<T>({
             onDelete={setDeleteItem}
             extraRowActions={extraRowActions}
             hideEdit={hideEdit}
+            readOnly={readOnly}
           />
         </CardContent>
       </Card>

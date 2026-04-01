@@ -927,15 +927,9 @@ namespace MyFO.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("created_by");
 
-                    b.Property<Guid?>("CreditCardInstallmentFamilyId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("CreditCardInstallmentId")
                         .HasColumnType("uuid")
                         .HasColumnName("credit_card_installment_id");
-
-                    b.Property<Guid?>("CreditCardInstallmentId1")
-                        .HasColumnType("uuid");
 
                     b.Property<Guid>("CreditCardPaymentId")
                         .HasColumnType("uuid")
@@ -957,42 +951,34 @@ namespace MyFO.Infrastructure.Persistence.Migrations
                         .HasColumnType("uuid")
                         .HasColumnName("modified_by");
 
+                    b.Property<Guid?>("MovementPaymentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("movement_payment_id");
+
                     b.Property<decimal>("PrimaryExchangeRate")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)")
                         .HasColumnName("primary_exchange_rate");
 
                     b.Property<decimal>("SecondaryExchangeRate")
-                        .HasPrecision(18, 6)
-                        .HasColumnType("numeric(18,6)")
+                        .HasPrecision(18, 8)
+                        .HasColumnType("numeric(18,8)")
                         .HasColumnName("secondary_exchange_rate");
-
-                    b.Property<Guid?>("StatementLineItemFamilyId")
-                        .HasColumnType("uuid");
 
                     b.Property<Guid?>("StatementLineItemId")
                         .HasColumnType("uuid")
                         .HasColumnName("statement_line_item_id");
 
-                    b.Property<Guid?>("StatementLineItemId1")
-                        .HasColumnType("uuid");
-
                     b.HasKey("FamilyId", "AllocationId");
 
-                    b.HasIndex("CreditCardInstallmentFamilyId", "CreditCardInstallmentId1");
-
-                    b.HasIndex("FamilyId", "CreditCardInstallmentId")
-                        .HasDatabaseName("ix_allocations_installment")
-                        .HasFilter("credit_card_installment_id IS NOT NULL");
+                    b.HasIndex("FamilyId", "CreditCardInstallmentId");
 
                     b.HasIndex("FamilyId", "CreditCardPaymentId")
-                        .HasDatabaseName("ix_allocations_payment");
+                        .HasDatabaseName("ix_statement_payment_allocations_payment");
 
-                    b.HasIndex("FamilyId", "StatementLineItemId")
-                        .HasDatabaseName("ix_allocations_line_item")
-                        .HasFilter("statement_line_item_id IS NOT NULL");
+                    b.HasIndex("FamilyId", "MovementPaymentId");
 
-                    b.HasIndex("StatementLineItemFamilyId", "StatementLineItemId1");
+                    b.HasIndex("FamilyId", "StatementLineItemId");
 
                     b.ToTable("statement_payment_allocations", "txn");
                 });
@@ -2333,7 +2319,7 @@ namespace MyFO.Infrastructure.Persistence.Migrations
                 {
                     b.HasOne("MyFO.Domain.CreditCards.CreditCardInstallment", "CreditCardInstallment")
                         .WithMany()
-                        .HasForeignKey("CreditCardInstallmentFamilyId", "CreditCardInstallmentId1");
+                        .HasForeignKey("FamilyId", "CreditCardInstallmentId");
 
                     b.HasOne("MyFO.Domain.CreditCards.CreditCardPayment", "CreditCardPayment")
                         .WithMany("Allocations")
@@ -2341,13 +2327,19 @@ namespace MyFO.Infrastructure.Persistence.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("MyFO.Domain.Transactions.MovementPayment", "MovementPayment")
+                        .WithMany()
+                        .HasForeignKey("FamilyId", "MovementPaymentId");
+
                     b.HasOne("MyFO.Domain.CreditCards.StatementLineItem", "StatementLineItem")
                         .WithMany()
-                        .HasForeignKey("StatementLineItemFamilyId", "StatementLineItemId1");
+                        .HasForeignKey("FamilyId", "StatementLineItemId");
 
                     b.Navigation("CreditCardInstallment");
 
                     b.Navigation("CreditCardPayment");
+
+                    b.Navigation("MovementPayment");
 
                     b.Navigation("StatementLineItem");
                 });

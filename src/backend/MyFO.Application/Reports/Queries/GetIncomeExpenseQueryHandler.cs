@@ -1,4 +1,4 @@
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using Microsoft.EntityFrameworkCore;
 using MyFO.Application.Common.Interfaces;
 using MyFO.Application.Reports.DTOs;
@@ -125,6 +125,34 @@ public class GetIncomeExpenseQueryHandler : IRequestHandler<GetIncomeExpenseQuer
             Unspecified    = expenseRows.Where(r => r.IsOrdinary == null).Sum(r => r.Amount),
         };
 
+        // ── Expense by cost center ────────────────────────────────────────────────
+        var expenseMovements = movements.Where(m => m.MovementType == MovementType.Expense).ToList();
+        var ccIds = expenseMovements
+            .Where(m => m.CostCenterId.HasValue)
+            .Select(m => m.CostCenterId!.Value)
+            .Distinct()
+            .ToList();
+
+        List<NameAmountDto> expenseByCostCenter = [];
+        if (ccIds.Count > 0)
+        {
+            var ccNameMap = await _db.CostCenters
+                .Where(cc => ccIds.Contains(cc.CostCenterId))
+                .Select(cc => new { cc.CostCenterId, cc.Name })
+                .ToListAsync(ct);
+
+            expenseByCostCenter = expenseMovements
+                .Where(m => m.CostCenterId.HasValue)
+                .GroupBy(m => m.CostCenterId!.Value)
+                .Select(g => new NameAmountDto
+                {
+                    Name = ccNameMap.FirstOrDefault(c => c.CostCenterId == g.Key)?.Name ?? "(Sin CC)",
+                    Amount = g.Sum(m => useSecondary ? m.AmountInSecondary : m.AmountInPrimary),
+                })
+                .OrderByDescending(x => x.Amount)
+                .ToList();
+        }
+
         // ── Income by source (top subcategory) ───────────────────────────────────
         var incomeBySource = incomeRows
             .GroupBy(r => r.SubcategoryName)
@@ -172,15 +200,16 @@ public class GetIncomeExpenseQueryHandler : IRequestHandler<GetIncomeExpenseQuer
 
         return new IncomeExpenseReportDto
         {
-            Granularity        = granularity,
-            TotalExpense       = totalExpense,
-            TotalIncome        = totalIncome,
+            Granularity          = granularity,
+            TotalExpense         = totalExpense,
+            TotalIncome          = totalIncome,
             ExpenseBySubcategory = expenseBySubcat,
-            ExpenseByCategory  = expenseByCategory,
-            OrdVsExtra         = ordVsExtra,
-            CategoryEvolution  = categoryEvolution,
-            IncomeBySource     = incomeBySource,
-            IncomeEvolution    = incomeEvolution,
+            ExpenseByCategory    = expenseByCategory,
+            OrdVsExtra           = ordVsExtra,
+            CategoryEvolution    = categoryEvolution,
+            IncomeBySource       = incomeBySource,
+            IncomeEvolution      = incomeEvolution,
+            ExpenseByCostCenter  = expenseByCostCenter,
         };
     }
 

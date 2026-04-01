@@ -1,4 +1,4 @@
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyFO.Application.Transactions.CashBoxes.Commands;
@@ -17,8 +17,8 @@ public class CashBoxesController : ControllerBase
     public CashBoxesController(IMediator mediator) => _mediator = mediator;
 
     [HttpGet]
-    public async Task<ActionResult<List<CashBoxDto>>> GetAll(CancellationToken ct)
-        => Ok(await _mediator.Send(new GetCashBoxesQuery(), ct));
+    public async Task<ActionResult<List<CashBoxDto>>> GetAll([FromQuery] bool includeAll = false, CancellationToken ct = default)
+        => Ok(await _mediator.Send(new GetCashBoxesQuery(includeAll), ct));
 
     [HttpPost]
     public async Task<ActionResult<CashBoxDto>> Create([FromBody] CreateCashBoxCommand command, CancellationToken ct)

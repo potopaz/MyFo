@@ -108,7 +108,7 @@ function LoadingSkeleton() {
 
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
-export default function PatrimonioPage() {
+export default function PatrimonyPage() {
   const [dateRange, setDateRange] = useState<DateRange>(defaultDateRange())
   const [currency, setCurrency] = useState('')
   const [primaryCurrency, setPrimaryCurrency] = useState('ARS')

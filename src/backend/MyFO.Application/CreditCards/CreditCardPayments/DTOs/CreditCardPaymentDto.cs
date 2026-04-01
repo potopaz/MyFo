@@ -14,6 +14,7 @@ public class CreditCardPaymentDto
     public string? BankAccountName { get; set; }
     public bool IsTotalPayment { get; set; }
     public Guid? StatementPeriodId { get; set; }
+    public bool IsPeriodClosed { get; set; }
     public decimal PrimaryExchangeRate { get; set; }
     public decimal SecondaryExchangeRate { get; set; }
     public decimal AmountInPrimary { get; set; }

@@ -1,5 +1,5 @@
 using System.Security.Claims;
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyFO.Application.Auth;

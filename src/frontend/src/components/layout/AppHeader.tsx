@@ -5,7 +5,6 @@ import { useNotifications } from '@/contexts/NotificationsContext'
 import { useNavigate } from 'react-router-dom'
 import { SidebarTrigger } from '@/components/ui/sidebar'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -16,11 +15,11 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Bell, LogOut, Search, ChevronDown, User, Sun, Moon, Clock } from 'lucide-react'
+import { Bell, LogOut, ChevronDown, User, Sun, Moon, Clock, ArrowLeft } from 'lucide-react'
 
 export function AppHeader() {
   const { t } = useTranslation()
-  const { fullName, email, currentFamily, logout } = useAuth()
+  const { fullName, email, currentFamily, isSuperAdmin, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const { notifications, unreadCount, isUnread, markAllAsRead } = useNotifications()
   const navigate = useNavigate()
@@ -41,14 +40,12 @@ export function AppHeader() {
     <header className="flex h-14 items-center gap-3 border-b bg-card px-3 sm:px-4">
       <SidebarTrigger />
 
-      {/* Search — hidden on very small screens */}
-      <div className="relative hidden sm:block sm:w-56 lg:w-72">
-        <Search className="pointer-events-none absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input
-          placeholder={t('header.search')}
-          className="h-8 bg-background pl-8 text-sm"
-        />
-      </div>
+      {isSuperAdmin && (
+        <Button variant="ghost" size="sm" onClick={() => navigate('/auth/select-family')} className="gap-1.5 text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" />
+          <span className="hidden sm:inline">{t('admin.backToFamilies')}</span>
+        </Button>
+      )}
 
       <div className="flex-1" />
 

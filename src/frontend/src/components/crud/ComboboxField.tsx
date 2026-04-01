@@ -44,13 +44,14 @@ export function ComboboxField({
 
   // Sync display text when value or options change
   useEffect(() => {
+    if (open && !value) return // user is typing/searching, don't overwrite
     if (value) {
       const opt = options.find((o) => o.value === value)
       setSearch(opt ? opt.label : value)
     } else {
       setSearch('')
     }
-  }, [value, options])
+  }, [value, options, open])
 
   const filtered = useMemo(() => {
     if (!search.trim()) return options

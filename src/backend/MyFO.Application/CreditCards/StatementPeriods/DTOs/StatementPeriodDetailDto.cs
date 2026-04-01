@@ -22,6 +22,7 @@ public class StatementInstallmentDto
     public bool IsIncluded { get; set; }
     public decimal? ActualBonificationAmount { get; set; }
     public bool IsBonificationIncluded { get; set; }
+    public string? CreditCardMemberName { get; set; }
 }
 
 public class StatementLineItemDto

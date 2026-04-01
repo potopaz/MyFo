@@ -1,4 +1,4 @@
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using Microsoft.EntityFrameworkCore;
 using MyFO.Application.Common.Interfaces;
 using MyFO.Application.Transactions.CashBoxes.DTOs;
@@ -28,8 +28,8 @@ public class GetCashBoxesQueryHandler : IRequestHandler<GetCashBoxesQuery, List<
 
         IQueryable<Domain.Transactions.CashBox> query = _db.CashBoxes;
 
-        // Admin ve todas las cajas. Miembro solo ve las que tiene permiso (puede operar).
-        if (!isAdmin)
+        // Admin ve todas las cajas. Miembro: si IncludeAll, ve todas; si no, solo las que tiene permiso.
+        if (!isAdmin && !request.IncludeAll)
         {
             query = query.Where(c => _db.CashBoxPermissions.Any(p => p.CashBoxId == c.CashBoxId && p.MemberId == memberId));
         }

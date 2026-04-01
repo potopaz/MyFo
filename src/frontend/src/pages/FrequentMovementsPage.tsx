@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
+import { ConfirmDialog } from '@/components/crud/ConfirmDialog'
 import { Plus, Pencil, Trash2, Play, HelpCircle } from 'lucide-react'
 import api from '@/lib/api'
 import axios from 'axios'
@@ -118,6 +119,7 @@ export default function FrequentMovementsPage() {
   const [loading, setLoading] = useState(true)
   const [applying, setApplying] = useState<string | null>(null)
   const [deleting, setDeleting] = useState<string | null>(null)
+  const [deleteId, setDeleteId] = useState<string | null>(null)
 
   const load = async () => {
     setLoading(true)
@@ -137,17 +139,18 @@ export default function FrequentMovementsPage() {
     navigate(`/movements/new?from=${item.frequentMovementId}`)
   }
 
-  const handleDelete = async (id: string) => {
-    if (!window.confirm(t('crud.confirmDeleteDesc'))) return
-    setDeleting(id)
+  const handleDelete = async () => {
+    if (!deleteId) return
+    setDeleting(deleteId)
     try {
-      await api.delete(`/frequent-movements/${id}`)
+      await api.delete(`/frequent-movements/${deleteId}`)
       toast.success(t('frequentMovements.deleteSuccess'))
-      setItems((prev) => prev.filter((i) => i.frequentMovementId !== id))
+      setItems((prev) => prev.filter((i) => i.frequentMovementId !== deleteId))
     } catch (err) {
       toast.error(extractError(err))
     } finally {
       setDeleting(null)
+      setDeleteId(null)
     }
   }
 
@@ -167,7 +170,7 @@ export default function FrequentMovementsPage() {
     return <div className="flex items-center justify-center py-20 text-muted-foreground">{t('common.loading')}</div>
   }
 
-  const cardProps = { applying, deleting, onApply: handleApply, onDelete: handleDelete, navigate, t }
+  const cardProps = { applying, deleting, onApply: handleApply, onDelete: setDeleteId, navigate, t }
 
   return (
     <div className="mx-auto max-w-5xl space-y-6 pb-10">
@@ -234,6 +237,12 @@ export default function FrequentMovementsPage() {
           )}
         </>
       )}
+
+      <ConfirmDialog
+        open={deleteId !== null}
+        onOpenChange={(open) => { if (!open) setDeleteId(null) }}
+        onConfirm={handleDelete}
+      />
     </div>
   )
 }

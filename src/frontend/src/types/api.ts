@@ -205,6 +205,7 @@ export interface StatementInstallmentDto {
   isIncluded: boolean
   actualBonificationAmount: number | null
   isBonificationIncluded: boolean
+  creditCardMemberName: string | null
 }
 
 export interface StatementLineItemDto {
@@ -227,6 +228,7 @@ export interface CreditCardPaymentDto {
   bankAccountName: string | null
   isTotalPayment: boolean
   statementPeriodId: string | null
+  isPeriodClosed: boolean
   primaryExchangeRate: number
   secondaryExchangeRate: number
   amountInPrimary: number
@@ -471,6 +473,7 @@ export interface IncomeExpenseReportDto {
   categoryEvolution: TimeSeriesMultiDto[]
   incomeBySource: NameAmountDto[]
   incomeEvolution: TimePointDto[]
+  expenseByCostCenter: NameAmountDto[]
 }
 
 export interface CashFlowPointDto {
@@ -482,6 +485,7 @@ export interface CashFlowPointDto {
 
 export interface FutureInstallmentDto {
   label: string
+  month: string
   amount: number
   cardName: string
 }
@@ -494,9 +498,18 @@ export interface CashFlowReportDto {
   paymentMethodEvolution: TimeSeriesMultiDto[]
 }
 
+export interface MonthlyDebtEvolutionDto {
+  label: string
+  newDebt: number
+  paid: number
+  net: number
+}
+
 export interface CardInstallmentsSummaryDto {
+  cardId: string
   cardName: string
   totalDebt: number
+  totalPaid: number
   pendingInstallments: number
 }
 
@@ -510,10 +523,12 @@ export interface CardsCCReportDto {
   totalDebt: number
   totalPaid: number
   installmentsByCard: CardInstallmentsSummaryDto[]
+  futureInstallments: FutureInstallmentDto[]
   byCostCenter: NameAmountDto[]
   costCenterEvolution: TimeSeriesMultiDto[]
   chargesVsBonifications: ChargesVsBonificationsDto
   granularity: string
+  monthlyDebtEvolution: MonthlyDebtEvolutionDto[]
 }
 
 export interface AccountBalanceItemDto {
@@ -544,6 +559,8 @@ export interface DrilldownMovementDto {
   description: string | null
   subcategoryName: string
   categoryName: string
+  costCenterName: string | null
+  isOrdinary: boolean | null
   amount: number
   currencyCode: string
   movementType: string
@@ -552,5 +569,6 @@ export interface DrilldownMovementDto {
 export interface DrilldownResultDto {
   totalCount: number
   totalAmount: number
+  netAmount: number
   items: DrilldownMovementDto[]
 }

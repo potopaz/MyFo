@@ -1,4 +1,4 @@
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using MyFO.Application.Transactions.Transfers.DTOs;
 
 namespace MyFO.Application.Transactions.Transfers.Queries;

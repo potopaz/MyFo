@@ -1,4 +1,4 @@
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using Microsoft.EntityFrameworkCore;
 using MyFO.Application.Common.Interfaces;
 using MyFO.Application.Reports.DTOs;
@@ -30,27 +30,33 @@ public class GetCardsCCQueryHandler : IRequestHandler<GetCardsCCQuery, CardsCCRe
 
         var today = DateOnly.FromDateTime(DateTime.UtcNow);
 
-        // ── Future installments (all pending) ─────────────────────────────────────
-        var futureInstallments = await _db.CreditCardInstallments
-            .Where(i => i.EstimatedDate >= today && i.ActualAmount == null)
+        // ── Future installments (next 12 months, pending) — with currency conversion ─
+        var maxFutureDate = today.AddMonths(12);
+        var futureRaw = await _db.CreditCardInstallments
+            .Where(i => i.EstimatedDate >= today && i.EstimatedDate <= maxFutureDate && i.ActualAmount == null)
             .Join(_db.MovementPayments, i => i.MovementPaymentId, p => p.MovementPaymentId,
-                (i, p) => new { i.EffectiveAmount, p.CreditCardId })
+                (i, p) => new { i.EffectiveAmount, i.EstimatedDate, p.CreditCardId, p.MovementId })
             .Where(x => x.CreditCardId != null)
-            .Join(_db.CreditCards, x => x.CreditCardId, cc => cc.CreditCardId,
-                (x, cc) => new { x.EffectiveAmount, cc.Name })
+            .Join(_db.Movements, x => x.MovementId, m => m.MovementId,
+                (x, m) => new { x.EffectiveAmount, x.EstimatedDate, x.CreditCardId,
+                                 m.Amount, m.AmountInPrimary, m.AmountInSecondary })
+            .Join(_db.CreditCards, x => x.CreditCardId!.Value, cc => cc.CreditCardId,
+                (x, cc) => new { x.EffectiveAmount, x.EstimatedDate, CreditCardId = cc.CreditCardId,
+                                  CardName = cc.Name, x.Amount, x.AmountInPrimary, x.AmountInSecondary })
             .ToListAsync(ct);
 
-        var totalDebt = futureInstallments.Sum(x => x.EffectiveAmount);
-        var installmentsByCard = futureInstallments
-            .GroupBy(x => x.Name)
-            .Select(g => new CardInstallmentsSummaryDto
-            {
-                CardName = g.Key,
-                TotalDebt = g.Sum(x => x.EffectiveAmount),
-                PendingInstallments = g.Count(),
-            })
-            .OrderByDescending(x => x.TotalDebt)
-            .ToList();
+        // Convert installment amounts to report currency.
+        // Formula: EffectiveAmount × (targetAmount / movementAmount)
+        // Works regardless of the CC's native currency (ARS or USD).
+        var futureConverted = futureRaw.Select(x => new
+        {
+            x.EstimatedDate,
+            x.CreditCardId,
+            x.CardName,
+            Amount = x.Amount > 0
+                ? x.EffectiveAmount * (useSecondary ? x.AmountInSecondary : x.AmountInPrimary) / x.Amount
+                : x.EffectiveAmount,
+        }).ToList();
 
         // ── CC payments in period ─────────────────────────────────────────────────
         var ccPayments = await _db.CreditCardPayments
@@ -58,6 +64,41 @@ public class GetCardsCCQueryHandler : IRequestHandler<GetCardsCCQuery, CardsCCRe
             .ToListAsync(ct);
 
         var totalPaid = ccPayments.Sum(p => useSecondary ? p.AmountInSecondary : p.AmountInPrimary);
+
+        // Per-card paid in period
+        var paidByCard = ccPayments
+            .GroupBy(p => p.CreditCardId)
+            .ToDictionary(g => g.Key, g => g.Sum(p => useSecondary ? p.AmountInSecondary : p.AmountInPrimary));
+
+        // ── Installments summary by card ──────────────────────────────────────────
+        var installmentsByCard = futureConverted
+            .GroupBy(x => new { x.CreditCardId, x.CardName })
+            .Select(g => new CardInstallmentsSummaryDto
+            {
+                CardId              = g.Key.CreditCardId,
+                CardName            = g.Key.CardName,
+                TotalDebt           = Math.Round(g.Sum(x => x.Amount), 2),
+                TotalPaid           = paidByCard.GetValueOrDefault(g.Key.CreditCardId),
+                PendingInstallments = g.Count(),
+            })
+            .OrderByDescending(x => x.TotalDebt)
+            .ToList();
+
+        // Derive total from per-card sums to ensure consistency
+        var totalDebt = installmentsByCard.Sum(x => x.TotalDebt);
+
+        // ── Future installments per month per card (for stacked bar chart) ────────
+        var futureByMonthCard = futureConverted
+            .GroupBy(x => new { Month = new DateOnly(x.EstimatedDate.Year, x.EstimatedDate.Month, 1), x.CreditCardId, x.CardName })
+            .OrderBy(g => g.Key.Month)
+            .Select(g => new FutureInstallmentDto
+            {
+                Label    = g.Key.Month.ToString("MMM yy"),
+                Month    = g.Key.Month.ToString("yyyy-MM"),
+                Amount   = g.Sum(x => x.Amount),
+                CardName = g.Key.CardName,
+            })
+            .ToList();
 
         // ── Cost center breakdown ─────────────────────────────────────────────────
         var movements = await _db.Movements
@@ -120,6 +161,33 @@ public class GetCardsCCQueryHandler : IRequestHandler<GetCardsCCQuery, CardsCCRe
             })
             .ToList();
 
+        // ── Monthly new CC debt vs payments ───────────────────────────────────────
+        var ccPurchaseAmounts = await (
+            from p in _db.MovementPayments
+            where p.CreditCardId != null
+            join m in _db.Movements on p.MovementId equals m.MovementId
+            where m.Date >= request.From && m.Date <= request.To
+            select new { m.Date, Amount = useSecondary ? m.AmountInSecondary : m.AmountInPrimary }
+        ).ToListAsync(ct);
+
+        var newDebtByMonth = ccPurchaseAmounts
+            .GroupBy(x => new DateOnly(x.Date.Year, x.Date.Month, 1))
+            .ToDictionary(g => g.Key, g => g.Sum(x => x.Amount));
+
+        var paidByMonth2 = ccPayments
+            .GroupBy(p => new DateOnly(p.PaymentDate.Year, p.PaymentDate.Month, 1))
+            .ToDictionary(g => g.Key, g => g.Sum(p => useSecondary ? p.AmountInSecondary : p.AmountInPrimary));
+
+        var allMonths = newDebtByMonth.Keys.Union(paidByMonth2.Keys).OrderBy(d => d).ToList();
+
+        var monthlyDebtEvolution = allMonths.Select(m => new MonthlyDebtEvolutionDto
+        {
+            Label   = m.ToString("MMM yy"),
+            NewDebt = newDebtByMonth.GetValueOrDefault(m),
+            Paid    = paidByMonth2.GetValueOrDefault(m),
+            Net     = newDebtByMonth.GetValueOrDefault(m) - paidByMonth2.GetValueOrDefault(m),
+        }).ToList();
+
         // ── Charges vs bonifications (statement line items in period) ─────────────
         var statementsInPeriod = await _db.StatementPeriods
             .Where(s => s.DueDate >= request.From && s.DueDate <= request.To)
@@ -144,10 +212,12 @@ public class GetCardsCCQueryHandler : IRequestHandler<GetCardsCCQuery, CardsCCRe
             TotalDebt              = totalDebt,
             TotalPaid              = totalPaid,
             InstallmentsByCard     = installmentsByCard,
+            FutureInstallments     = futureByMonthCard,
             ByCostCenter           = byCostCenter,
             CostCenterEvolution    = ccEvolution,
             ChargesVsBonifications = chargesVsBonifications,
             Granularity            = granularity,
+            MonthlyDebtEvolution   = monthlyDebtEvolution,
         };
     }
 

@@ -1,5 +1,5 @@
 using System.Text.Json.Serialization;
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using MyFO.Application.CreditCards.CreditCardPayments.DTOs;
 
 namespace MyFO.Application.CreditCards.CreditCardPayments.Commands;

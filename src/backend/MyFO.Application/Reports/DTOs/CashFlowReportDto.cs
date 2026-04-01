@@ -28,6 +28,7 @@ public class CashFlowPointDto
 public class FutureInstallmentDto
 {
     public string Label { get; set; } = string.Empty;   // "Abr 2026"
+    public string Month { get; set; } = string.Empty;   // "2026-04" (for frontend filtering)
     public decimal Amount { get; set; }
     public string CardName { get; set; } = string.Empty;
 }

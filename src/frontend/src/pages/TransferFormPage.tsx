@@ -650,7 +650,7 @@ export default function TransferFormPage() {
         </div>
 
         {/* ── Importes + TC en una fila ── */}
-        <div className="grid gap-3 items-end" style={{ gridTemplateColumns: fromCurrencyCode && toCurrencyCode ? '1fr auto 1fr' : '1fr 1fr' }}>
+        <div className="grid gap-3 items-end" style={{ gridTemplateColumns: !sameCurrency && fromCurrencyCode && toCurrencyCode ? '1fr auto 1fr' : '1fr 1fr' }}>
 
           {/* Importe origen */}
           <div className="space-y-1.5">
@@ -699,7 +699,7 @@ export default function TransferFormPage() {
           </div>
 
           {/* TC origen → destino */}
-          {fromCurrencyCode && toCurrencyCode && (
+          {!sameCurrency && fromCurrencyCode && toCurrencyCode && (
             <div className="space-y-1.5">
               <Label className="text-xs text-muted-foreground whitespace-nowrap">
                 TC {fromCurrencyCode}/{toCurrencyCode}
@@ -708,8 +708,8 @@ export default function TransferFormPage() {
                 inputMode="decimal"
                 value={form.transferRate}
                 onChange={(e) => handleRateInput(e.target.value, handleTransferRateChange)}
-                disabled={sameCurrency || isReadOnly}
-                className={`w-28 ${sameCurrency ? 'bg-muted' : ''}`}
+                disabled={isReadOnly}
+                className="w-28"
                 placeholder="1.000000"
               />
             </div>

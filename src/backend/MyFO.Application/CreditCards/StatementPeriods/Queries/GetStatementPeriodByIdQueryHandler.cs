@@ -1,4 +1,4 @@
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using Microsoft.EntityFrameworkCore;
 using MyFO.Application.Common.Interfaces;
 using MyFO.Application.CreditCards.StatementPeriods.DTOs;
@@ -41,6 +41,30 @@ public class GetStatementPeriodByIdQueryHandler : IRequestHandler<GetStatementPe
                 .Where(i => i.StatementPeriodId == periodId);
         }
 
+        // For open periods, among unassigned candidates keep only the first per payment
+        // (lowest InstallmentNumber) to avoid showing all future installments of a purchase
+        List<Guid>? firstUnassignedIds = null;
+        if (isOpen)
+        {
+            firstUnassignedIds = await _db.CreditCardInstallments
+                .Where(i => i.DeletedAt == null && i.StatementPeriodId == null && i.EstimatedDate <= period.PeriodEnd)
+                .Join(_db.MovementPayments,
+                    i => new { i.FamilyId, i.MovementPaymentId },
+                    mp => new { mp.FamilyId, mp.MovementPaymentId },
+                    (i, mp) => new { i.CreditCardInstallmentId, i.MovementPaymentId, i.FamilyId, i.InstallmentNumber, mp.CreditCardId })
+                .Where(x => x.CreditCardId == period.CreditCardId)
+                .GroupBy(x => new { x.FamilyId, x.MovementPaymentId })
+                .Select(g => g.OrderBy(x => x.InstallmentNumber).First().CreditCardInstallmentId)
+                .ToListAsync(cancellationToken);
+
+            // Re-filter: assigned OR in the first-unassigned set
+            installmentsQuery = _db.CreditCardInstallments
+                .Where(i => i.DeletedAt == null)
+                .Where(i =>
+                    i.StatementPeriodId == periodId
+                    || (i.StatementPeriodId == null && firstUnassignedIds.Contains(i.CreditCardInstallmentId)));
+        }
+
         var installments = await installmentsQuery
             .Join(_db.MovementPayments,
                 i => new { i.FamilyId, i.MovementPaymentId },
@@ -51,7 +75,14 @@ public class GetStatementPeriodByIdQueryHandler : IRequestHandler<GetStatementPe
                 x => new { x.Payment.FamilyId, x.Payment.MovementId },
                 m => new { m.FamilyId, m.MovementId },
                 (x, m) => new { x.Installment, x.Payment, Movement = m })
-            .OrderBy(x => x.Installment.EstimatedDate)
+            .GroupJoin(_db.CreditCardMembers,
+                x => new { x.Payment.FamilyId, CreditCardMemberId = x.Payment.CreditCardMemberId ?? Guid.Empty },
+                cm => new { cm.FamilyId, cm.CreditCardMemberId },
+                (x, members) => new { x.Installment, x.Payment, x.Movement, Members = members })
+            .SelectMany(x => x.Members.DefaultIfEmpty(),
+                (x, member) => new { x.Installment, x.Payment, x.Movement, Member = member })
+            .OrderBy(x => x.Member != null ? x.Member.HolderName : "")
+            .ThenBy(x => x.Installment.EstimatedDate)
             .ThenBy(x => x.Movement.Date)
             .Select(x => new StatementInstallmentDto
             {
@@ -69,6 +100,7 @@ public class GetStatementPeriodByIdQueryHandler : IRequestHandler<GetStatementPe
                 IsIncluded = x.Installment.StatementPeriodId == periodId,
                 ActualBonificationAmount = x.Installment.ActualBonificationAmount,
                 IsBonificationIncluded = x.Installment.ActualBonificationAmount != null,
+                CreditCardMemberName = x.Member != null ? x.Member.HolderName : null,
             })
             .ToListAsync(cancellationToken);
 

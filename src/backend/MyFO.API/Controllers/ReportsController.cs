@@ -1,4 +1,4 @@
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using MyFO.Application.Reports.DTOs;
@@ -112,6 +112,7 @@ public class ReportsController : ControllerBase
         [FromQuery] string? dimension,
         [FromQuery] string? dimensionValue,
         [FromQuery] string? movementType,
+        [FromQuery] string? installmentMonth,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 50,
         CancellationToken ct = default)
@@ -123,6 +124,7 @@ public class ReportsController : ControllerBase
             Dimension = dimension,
             DimensionValue = dimensionValue,
             MovementType = movementType,
+            InstallmentMonth = installmentMonth,
             Page = page,
             PageSize = pageSize,
         }, ct));

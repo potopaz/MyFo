@@ -27,9 +27,9 @@ import {
   Banknote,
   Settings,
   BarChart2,
-  TrendingUp,
+  // TrendingUp,  // TODO: re-enable after polish
   Layers,
-  Building2,
+  // Building2,  // TODO: re-enable after polish
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -64,9 +64,9 @@ export function AppSidebar() {
 
   const reportItems: MenuItem[] = [
     { title: t('nav.reportsGastos'), url: '/reports/gastos', icon: BarChart2 },
-    { title: t('nav.reportsFlujo'), url: '/reports/flujo', icon: TrendingUp },
+    // { title: t('nav.reportsFlujo'), url: '/reports/flujo', icon: TrendingUp },  // TODO: re-enable after polish
     { title: t('nav.reportsTarjetas'), url: '/reports/tarjetas', icon: Layers },
-    { title: t('nav.reportsPatrimonio'), url: '/reports/patrimonio', icon: Building2 },
+    // { title: t('nav.reportsPatrimonio'), url: '/reports/patrimonio', icon: Building2 },  // TODO: re-enable after polish
   ]
 
   const adminItems: MenuItem[] = [

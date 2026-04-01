@@ -1,7 +1,8 @@
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using Microsoft.EntityFrameworkCore;
 using MyFO.Application.Common.Interfaces;
 using MyFO.Application.CreditCards.CreditCardPayments.DTOs;
+using MyFO.Application.CreditCards.StatementPeriods.Commands;
 using MyFO.Domain.CreditCards;
 using MyFO.Domain.CreditCards.Enums;
 using MyFO.Domain.Exceptions;
@@ -43,18 +44,19 @@ public class CreateCreditCardPaymentCommandHandler : IRequestHandler<CreateCredi
             throw new DomainException("INACTIVE_CREDIT_CARD", "La tarjeta de crédito está inactiva.");
 
         // Validate statement period if provided
+        StatementPeriod? statementPeriod = null;
         if (request.StatementPeriodId.HasValue)
         {
-            var period = await _db.StatementPeriods
+            statementPeriod = await _db.StatementPeriods
                 .FirstOrDefaultAsync(sp => sp.FamilyId == familyId
                     && sp.StatementPeriodId == request.StatementPeriodId.Value
                     && sp.CreditCardId == request.CreditCardId, cancellationToken)
                 ?? throw new DomainException("INVALID_STATEMENT_PERIOD", "El período de liquidación no existe o no corresponde a esta tarjeta.");
 
-            if (period.ClosedAt == null)
+            if (statementPeriod.ClosedAt == null)
                 throw new DomainException("PERIOD_NOT_CLOSED", "Solo se pueden asociar pagos a períodos cerrados.");
 
-            if (period.PaymentStatus == PaymentStatus.FullyPaid)
+            if (statementPeriod.PaymentStatus == PaymentStatus.FullyPaid)
                 throw new DomainException("PERIOD_ALREADY_PAID", "El período ya está completamente pagado.");
         }
 
@@ -113,6 +115,13 @@ public class CreateCreditCardPaymentCommandHandler : IRequestHandler<CreateCredi
         };
 
         await _db.CreditCardPayments.AddAsync(payment, cancellationToken);
+
+        if (statementPeriod != null)
+        {
+            await StatementPaymentAllocationHelper.GenerateAsync(db: _db, familyId, statementPeriod, payment, cancellationToken);
+            StatementPaymentAllocationHelper.ApplyPayment(statementPeriod, payment.Amount);
+        }
+
         await _db.SaveChangesAsync(cancellationToken);
 
         return new CreditCardPaymentDto

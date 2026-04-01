@@ -248,14 +248,12 @@ export default function MovementFormPage() {
       } else if (isFromFrequent && fromFrequentId) {
         try {
           const { data } = await api.get<FrequentMovementDto>(`/frequent-movements/${fromFrequentId}`)
-          const newDate = formatDateISO(new Date())
-          const newCurrency = data.currencyCode
 
           setForm({
-            date: newDate,
+            date: '',
             movementType: data.movementType,
             amount: data.amount.toFixed(2),
-            currencyCode: newCurrency,
+            currencyCode: data.currencyCode,
             primaryExchangeRate: '1',
             secondaryExchangeRate: '1',
             description: data.description ?? '',
@@ -275,33 +273,7 @@ export default function MovementFormPage() {
               bonificationValue: '',
             }],
           })
-
-          // Fetch exchange rates immediately with loaded settings
-          const pCurr = settings?.primaryCurrencyCode ?? ''
-          const sCurr = settings?.secondaryCurrencyCode ?? ''
-          const lockPrimary = newCurrency === pCurr
-          const lockSecondary = newCurrency === sCurr
-
-          const updates: Record<string, string> = {}
-          try {
-            if (!lockPrimary && pCurr && pCurr !== newCurrency) {
-              const { data: rateData } = await api.get<{ rate: number }>('/exchange-rates', {
-                params: { base_currency: newCurrency, target_currency: pCurr, date: newDate },
-              })
-              updates.primaryExchangeRate = String(rateData.rate)
-            }
-            if (!lockSecondary && sCurr && sCurr !== newCurrency) {
-              const { data: rateData } = await api.get<{ rate: number }>('/exchange-rates', {
-                params: { base_currency: newCurrency, target_currency: sCurr, date: newDate },
-              })
-              updates.secondaryExchangeRate = String(rateData.rate)
-            }
-            if (Object.keys(updates).length > 0) {
-              setForm((p) => ({ ...p, ...updates }))
-            }
-          } catch {
-            // Silent fail - use default rates of 1
-          }
+          // Exchange rates will auto-fetch when user picks a date
         } catch (err) {
           toast.error(extractError(err))
           setForm(defaultForm(primaryCurrency))
@@ -637,6 +609,7 @@ export default function MovementFormPage() {
           <div className="space-y-1.5">
             <Label>{t('movements.form.date')}</Label>
             <Input
+              ref={(el) => { if (el && !loading) el.focus() }}
               type="date"
               value={form.date}
               onChange={(e) => {
@@ -776,32 +749,6 @@ export default function MovementFormPage() {
           </div>
         </div>
 
-
-        {/* === Tipo de movimiento extra (si subcategoría es Both) === */}
-        {showMovementType && (
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-1.5">
-              <Label>{t('movements.form.type')}</Label>
-              <Select
-                value={form.movementType}
-                onValueChange={(v) => setForm((p): MovementForm => {
-                  const payments = v === 'Income' ? stripCreditCardPayments(p.payments) : p.payments
-                  return { ...p, movementType: v as string, payments, amount: recomputeAmount(payments) }
-                })}
-              >
-                <SelectTrigger className="w-full">
-                  <SelectValue>
-                    {{ Income: t('movements.form.income'), Expense: t('movements.form.expense'), '': t('movements.form.selectType') }[form.movementType]}
-                  </SelectValue>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Income">{t('movements.form.income')}</SelectItem>
-                  <SelectItem value="Expense">{t('movements.form.expense')}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-        )}
 
         {/* === Descripción === */}
         <div className="space-y-1.5">

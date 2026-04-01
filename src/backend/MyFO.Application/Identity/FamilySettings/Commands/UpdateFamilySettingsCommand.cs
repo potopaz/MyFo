@@ -1,4 +1,4 @@
-using MediatR;
+using MyFO.Application.Common.Mediator;
 using MyFO.Application.Identity.FamilySettings.DTOs;
 
 namespace MyFO.Application.Identity.FamilySettings.Commands;

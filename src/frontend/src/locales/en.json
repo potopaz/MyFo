@@ -59,7 +59,7 @@
     "analysis": "Analysis by period",
     "reportsGastos": "Expenses & Income",
     "reportsFlujo": "Cash Flow",
-    "reportsTarjetas": "Cards & Cost Centers",
+    "reportsTarjetas": "Credit Cards",
     "reportsPatrimonio": "Patrimony",
     "admin": "Administration",
     "members": "Members"
@@ -787,6 +787,7 @@
     "primaryExchangeRate": "Primary exchange rate",
     "secondaryExchangeRate": "Secondary exchange rate",
     "installmentCols": {
+      "member": "Member",
       "description": "Description",
       "installment": "Installment",
       "projected": "Projected",
@@ -794,6 +795,7 @@
       "effective": "Effective",
       "actual": "Actual"
     },
+    "noMember": "No member",
     "status": {
       "label": "Status",
       "open": "Open",
