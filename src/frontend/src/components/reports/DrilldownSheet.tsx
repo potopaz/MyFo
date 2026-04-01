@@ -11,13 +11,6 @@ import {
 } from '@/components/ui/dialog'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { ComboboxField } from '@/components/crud/ComboboxField'
 import api from '@/lib/api'
 import type { CategoryDto, CostCenterDto, DrilldownMovementDto, DrilldownResultDto } from '@/types/api'
@@ -71,6 +64,24 @@ function acctLabel(v: string | null | undefined): string {
 }
 
 const PAGE_SIZE = 50
+
+// ─── Static option lists ───────────────────────────────────────────────────────
+
+type Opt = { value: string; label: string }
+
+const ORDINARY_OPTS: Opt[] = [
+  { value: 'none', label: '–' },
+  { value: 'true', label: 'Ord.' },
+  { value: 'false', label: 'Extr.' },
+]
+
+const ACCOUNTING_TYPE_OPTS: Opt[] = [
+  { value: 'none', label: '–' },
+  { value: 'Asset', label: 'Activo' },
+  { value: 'Liability', label: 'Pasivo' },
+  { value: 'Income', label: 'Ingreso' },
+  { value: 'Expense', label: 'Gasto' },
+]
 
 // ─── Fetch all items (for export / print) ─────────────────────────────────────
 
@@ -171,6 +182,108 @@ function printItems(items: DrilldownMovementDto[], title: string, currency: stri
   win.print()
 }
 
+// ─── DrilldownRow ─────────────────────────────────────────────────────────────
+
+interface DrilldownRowProps {
+  item: DrilldownMovementDto
+  incomeSubOpts: Opt[]
+  expenseSubOpts: Opt[]
+  costCenterOpts: Opt[]
+  saving: boolean
+  onSubcategoryChange: (item: DrilldownMovementDto, newSubId: string) => void
+  onCostCenterChange: (item: DrilldownMovementDto, val: string) => void
+  onOrdinaryChange: (item: DrilldownMovementDto, val: string) => void
+  onAccountingTypeChange: (item: DrilldownMovementDto, val: string) => void
+}
+
+function DrilldownRow({
+  item, incomeSubOpts, expenseSubOpts, costCenterOpts, saving,
+  onSubcategoryChange, onCostCenterChange, onOrdinaryChange, onAccountingTypeChange,
+}: DrilldownRowProps) {
+  // Memoize per-row options so ComboboxField gets a stable reference
+  const subOpts = useMemo(() => {
+    const base = item.movementType === 'Income' ? incomeSubOpts : expenseSubOpts
+    if (base.some(o => o.value === item.subcategoryId)) return base
+    // Current subcategory is inactive — prepend it with category › name format
+    return [{ value: item.subcategoryId, label: `${item.categoryName} › ${item.subcategoryName}` }, ...base]
+  }, [item.movementType, item.subcategoryId, item.subcategoryName, item.categoryName, incomeSubOpts, expenseSubOpts])
+
+  const ccOpts = useMemo(() => {
+    if (!item.costCenterId) return costCenterOpts
+    if (costCenterOpts.some(o => o.value === item.costCenterId)) return costCenterOpts
+    // Current CC is inactive — prepend it
+    return [{ value: item.costCenterId, label: item.costCenterName ?? item.costCenterId }, ...costCenterOpts]
+  }, [item.costCenterId, item.costCenterName, costCenterOpts])
+
+  const rowKey = `${item.movementId}-${item.date}`
+
+  return (
+    <tr className="border-b last:border-0 hover:bg-muted/30 transition-colors">
+      <td className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap text-xs">
+        {fmtDate(item.date)}
+      </td>
+      <td className="py-1.5 pr-3 max-w-[180px] truncate text-xs">
+        {item.description ?? <span className="text-muted-foreground italic">Sin descripción</span>}
+      </td>
+
+      {/* Subcategoría — editable, label = "Categoría › Subcategoría" */}
+      <td className="py-1.5 pr-3 hidden sm:table-cell min-w-[160px] max-w-[220px]">
+        <ComboboxField
+          id={`sub-${rowKey}`}
+          value={item.subcategoryId}
+          options={subOpts}
+          onChange={(val) => val && onSubcategoryChange(item, val)}
+          disabled={saving}
+          className="h-7 text-xs px-2"
+        />
+      </td>
+
+      {/* Centro de Costo — editable */}
+      <td className="py-1.5 pr-3 hidden lg:table-cell min-w-[110px] max-w-[160px]">
+        <ComboboxField
+          id={`cc-${rowKey}`}
+          value={item.costCenterId ?? ''}
+          options={ccOpts}
+          onChange={(val) => onCostCenterChange(item, val)}
+          disabled={saving}
+          placeholder="Sin CC"
+          className="h-7 text-xs px-2"
+        />
+      </td>
+
+      {/* Carácter — editable */}
+      <td className="py-1.5 pr-3 hidden lg:table-cell min-w-[90px]">
+        <ComboboxField
+          id={`ord-${rowKey}`}
+          value={item.isOrdinary === true ? 'true' : item.isOrdinary === false ? 'false' : 'none'}
+          options={ORDINARY_OPTS}
+          onChange={(val) => val && onOrdinaryChange(item, val === 'none' ? '' : val)}
+          disabled={saving}
+          className="h-7 text-xs px-2"
+        />
+      </td>
+
+      {/* Tipo Contable — editable */}
+      <td className="py-1.5 pr-3 hidden lg:table-cell min-w-[100px]">
+        <ComboboxField
+          id={`acct-${rowKey}`}
+          value={item.accountingType ?? 'none'}
+          options={ACCOUNTING_TYPE_OPTS}
+          onChange={(val) => val && onAccountingTypeChange(item, val === 'none' ? '' : val)}
+          disabled={saving}
+          className="h-7 text-xs px-2"
+        />
+      </td>
+
+      <td className="py-1.5 text-right font-medium whitespace-nowrap">
+        <span className={item.movementType === 'Expense' ? 'text-rose-500' : 'text-emerald-600'}>
+          {item.movementType === 'Expense' ? '–' : '+'}{fmtAmount(item.amount, item.currencyCode)}
+        </span>
+      </td>
+    </tr>
+  )
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function DrilldownSheet({
@@ -193,7 +306,7 @@ export function DrilldownSheet({
   const [localItems, setLocalItems] = useState<DrilldownMovementDto[]>([])
   const [savingIds, setSavingIds] = useState<Set<string>>(new Set())
 
-  // Catalog data for selects
+  // Catalog data
   const [categories, setCategories] = useState<CategoryDto[]>([])
   const [costCenters, setCostCenters] = useState<CostCenterDto[]>([])
 
@@ -351,42 +464,25 @@ export function DrilldownSheet({
     patchClassification(item.movementId, { accountingType: val || null })
   }
 
-  // ── Catalog option arrays (memoised) ─────────────────────────────────────
+  // ── Stable memoised option arrays (passed down to DrilldownRow) ───────────
 
   const incomeSubOpts = useMemo(() =>
     categories.flatMap(cat =>
       cat.subcategories
         .filter(s => s.isActive && (s.subcategoryType === 'Income' || s.subcategoryType === 'Both'))
-        .map(s => ({ value: s.subcategoryId, label: s.name }))
+        .map(s => ({ value: s.subcategoryId, label: `${cat.name} › ${s.name}` }))
     ), [categories])
 
   const expenseSubOpts = useMemo(() =>
     categories.flatMap(cat =>
       cat.subcategories
         .filter(s => s.isActive && (s.subcategoryType === 'Expense' || s.subcategoryType === 'Both'))
-        .map(s => ({ value: s.subcategoryId, label: s.name }))
+        .map(s => ({ value: s.subcategoryId, label: `${cat.name} › ${s.name}` }))
     ), [categories])
 
-  const costCenterOpts = useMemo(() => [
-    { value: '', label: '–' },
-    ...costCenters.filter(cc => cc.isActive).map(cc => ({ value: cc.costCenterId, label: cc.name })),
-  ], [costCenters])
-
-  function subcatOptsForItem(item: DrilldownMovementDto): { value: string; label: string }[] {
-    const base = item.movementType === 'Income' ? incomeSubOpts : expenseSubOpts
-    if (base.some(o => o.value === item.subcategoryId)) return base
-    return [{ value: item.subcategoryId, label: item.subcategoryName }, ...base]
-  }
-
-  function costCenterOptsForItem(item: DrilldownMovementDto): { value: string; label: string }[] {
-    if (!item.costCenterId) return costCenterOpts
-    if (costCenterOpts.some(o => o.value === item.costCenterId)) return costCenterOpts
-    return [
-      { value: '', label: '–' },
-      { value: item.costCenterId, label: item.costCenterName ?? item.costCenterId },
-      ...costCenterOpts.slice(1),
-    ]
-  }
+  const costCenterOpts = useMemo(() =>
+    costCenters.filter(cc => cc.isActive).map(cc => ({ value: cc.costCenterId, label: cc.name })),
+    [costCenters])
 
   // ────────────────────────────────────────────────────────────────────────────
 
@@ -446,88 +542,20 @@ export function DrilldownSheet({
                 </tr>
               </thead>
               <tbody>
-                {localItems.map((item) => {
-                  const saving = savingIds.has(item.movementId)
-                  return (
-                    <tr key={`${item.movementId}-${item.date}`} className="border-b last:border-0 hover:bg-muted/30 transition-colors">
-                      <td className="py-1.5 pr-3 text-muted-foreground whitespace-nowrap text-xs">
-                        {fmtDate(item.date)}
-                      </td>
-                      <td className="py-1.5 pr-3 max-w-[180px] truncate text-xs">
-                        {item.description ?? <span className="text-muted-foreground italic">Sin descripción</span>}
-                      </td>
-
-                      {/* Subcategoría — editable */}
-                      <td className="py-1.5 pr-3 hidden sm:table-cell min-w-[150px] max-w-[220px]">
-                        <div className="text-[10px] text-muted-foreground leading-none mb-0.5">{item.categoryName}</div>
-                        <ComboboxField
-                          id={`sub-${item.movementId}-${item.date}`}
-                          value={item.subcategoryId}
-                          options={subcatOptsForItem(item)}
-                          onChange={(val) => val && handleSubcategoryChange(item, val)}
-                          disabled={saving}
-                          className="h-7 text-xs px-2"
-                        />
-                      </td>
-
-                      {/* Centro de Costo — editable */}
-                      <td className="py-1.5 pr-3 hidden lg:table-cell min-w-[110px] max-w-[160px]">
-                        <ComboboxField
-                          id={`cc-${item.movementId}-${item.date}`}
-                          value={item.costCenterId ?? ''}
-                          options={costCenterOptsForItem(item)}
-                          onChange={(val) => handleCostCenterChange(item, val)}
-                          disabled={saving}
-                          className="h-7 text-xs px-2"
-                        />
-                      </td>
-
-                      {/* Carácter — editable */}
-                      <td className="py-1.5 pr-3 hidden lg:table-cell min-w-[90px]">
-                        <Select
-                          value={item.isOrdinary === true ? 'true' : item.isOrdinary === false ? 'false' : 'none'}
-                          onValueChange={(val) => val && handleOrdinaryChange(item, val === 'none' ? '' : val)}
-                          disabled={saving}
-                        >
-                          <SelectTrigger className="h-7 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">–</SelectItem>
-                            <SelectItem value="true">Ord.</SelectItem>
-                            <SelectItem value="false">Extra.</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </td>
-
-                      {/* Tipo Contable — editable */}
-                      <td className="py-1.5 pr-3 hidden lg:table-cell min-w-[100px]">
-                        <Select
-                          value={item.accountingType ?? 'none'}
-                          onValueChange={(val) => val && handleAccountingTypeChange(item, val === 'none' ? '' : val)}
-                          disabled={saving}
-                        >
-                          <SelectTrigger className="h-7 text-xs">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="none">–</SelectItem>
-                            <SelectItem value="Asset">Activo</SelectItem>
-                            <SelectItem value="Liability">Pasivo</SelectItem>
-                            <SelectItem value="Income">Ingreso</SelectItem>
-                            <SelectItem value="Expense">Gasto</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </td>
-
-                      <td className="py-1.5 text-right font-medium whitespace-nowrap">
-                        <span className={item.movementType === 'Expense' ? 'text-rose-500' : 'text-emerald-600'}>
-                          {item.movementType === 'Expense' ? '–' : '+'}{fmtAmount(item.amount, item.currencyCode)}
-                        </span>
-                      </td>
-                    </tr>
-                  )
-                })}
+                {localItems.map((item) => (
+                  <DrilldownRow
+                    key={`${item.movementId}-${item.date}`}
+                    item={item}
+                    incomeSubOpts={incomeSubOpts}
+                    expenseSubOpts={expenseSubOpts}
+                    costCenterOpts={costCenterOpts}
+                    saving={savingIds.has(item.movementId)}
+                    onSubcategoryChange={handleSubcategoryChange}
+                    onCostCenterChange={handleCostCenterChange}
+                    onOrdinaryChange={handleOrdinaryChange}
+                    onAccountingTypeChange={handleAccountingTypeChange}
+                  />
+                ))}
               </tbody>
               <tfoot>
                 <tr className="border-t-2">
