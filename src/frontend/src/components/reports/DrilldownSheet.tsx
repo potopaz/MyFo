@@ -307,6 +307,7 @@ export function DrilldownSheet({
   // Catalog data
   const [categories, setCategories] = useState<CategoryDto[]>([])
   const [costCenters, setCostCenters] = useState<CostCenterDto[]>([])
+  const [catalogsReady, setCatalogsReady] = useState(false)
 
   useEffect(() => {
     setPage(1)
@@ -317,17 +318,7 @@ export function DrilldownSheet({
     if (data?.items) setLocalItems(data.items)
   }, [data])
 
-  // Load catalogs once on mount
-  useEffect(() => {
-    Promise.all([
-      api.get<CategoryDto[]>('/categories'),
-      api.get<CostCenterDto[]>('/cost-centers'),
-    ]).then(([catsRes, ccRes]) => {
-      setCategories(catsRes.data)
-      setCostCenters(ccRes.data)
-    })
-  }, [])
-
+  // Load catalogs + drilldown data together when dialog opens
   useEffect(() => {
     if (!open) return
     if (!dateRange.from || !dateRange.to) return
@@ -337,7 +328,7 @@ export function DrilldownSheet({
     const from = format(dateRange.from, 'yyyy-MM-dd')
     const to = format(dateRange.to, 'yyyy-MM-dd')
 
-    api.get<DrilldownResultDto>('/reports/drilldown', {
+    const drilldownReq = api.get<DrilldownResultDto>('/reports/drilldown', {
       params: {
         from, to, currency, dimension, dimensionValue,
         ...(movementType ? { movementType } : {}),
@@ -345,14 +336,32 @@ export function DrilldownSheet({
         page,
         pageSize: PAGE_SIZE,
       },
-    }).then((res) => {
-      setData(res.data)
-    }).catch(() => {
-      setData(null)
-    }).finally(() => {
-      setLoading(false)
     })
-  }, [open, dateRange, currency, dimension, dimensionValue, movementType, installmentMonth, page])
+
+    // Load catalogs in parallel (only if not already loaded)
+    const catalogReq = catalogsReady
+      ? Promise.resolve(null)
+      : Promise.all([
+          api.get<CategoryDto[]>('/categories'),
+          api.get<CostCenterDto[]>('/cost-centers'),
+        ])
+
+    Promise.all([drilldownReq, catalogReq])
+      .then(([drilldownRes, catalogRes]) => {
+        if (catalogRes) {
+          setCategories(catalogRes[0].data)
+          setCostCenters(catalogRes[1].data)
+          setCatalogsReady(true)
+        }
+        setData(drilldownRes.data)
+      })
+      .catch(() => {
+        setData(null)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [open, dateRange, currency, dimension, dimensionValue, movementType, installmentMonth, page]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const totalPages = data ? Math.ceil(data.totalCount / PAGE_SIZE) : 1
 
