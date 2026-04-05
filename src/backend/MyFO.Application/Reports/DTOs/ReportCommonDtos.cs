@@ -31,10 +31,14 @@ public class DrilldownMovementDto
     public Guid MovementId { get; set; }
     public DateOnly Date { get; set; }
     public string? Description { get; set; }
+    public Guid SubcategoryId { get; set; }
     public string SubcategoryName { get; set; } = string.Empty;
     public string CategoryName { get; set; } = string.Empty;
+    public Guid? CostCenterId { get; set; }
     public string? CostCenterName { get; set; }
     public bool? IsOrdinary { get; set; }
+    public string? AccountingType { get; set; }
+    public int RowVersion { get; set; }
     public decimal Amount { get; set; }
     public string CurrencyCode { get; set; } = string.Empty;
     public string MovementType { get; set; } = string.Empty;

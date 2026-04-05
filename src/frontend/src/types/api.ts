@@ -561,10 +561,14 @@ export interface DrilldownMovementDto {
   movementId: string
   date: string
   description: string | null
+  subcategoryId: string
   subcategoryName: string
   categoryName: string
+  costCenterId: string | null
   costCenterName: string | null
   isOrdinary: boolean | null
+  accountingType: string | null
+  rowVersion: number
   amount: number
   currencyCode: string
   movementType: string

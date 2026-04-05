@@ -54,6 +54,14 @@ public class MovementsController : ControllerBase
         return Ok(await _mediator.Send(command, ct));
     }
 
+    [HttpPatch("{id}/classification")]
+    public async Task<IActionResult> PatchClassification(Guid id, [FromBody] PatchMovementClassificationCommand command, CancellationToken ct)
+    {
+        command.MovementId = id;
+        await _mediator.Send(command, ct);
+        return NoContent();
+    }
+
     [HttpDelete("{id}")]
     public async Task<IActionResult> Delete(Guid id, CancellationToken ct)
     {
