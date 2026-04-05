@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react'
+import { useState, useEffect, useMemo, useRef } from 'react'
 import { format } from 'date-fns'
 import { ChevronLeft, ChevronRight, Download, Printer } from 'lucide-react'
 import * as XLSX from 'xlsx'
@@ -307,7 +307,7 @@ export function DrilldownSheet({
   // Catalog data
   const [categories, setCategories] = useState<CategoryDto[]>([])
   const [costCenters, setCostCenters] = useState<CostCenterDto[]>([])
-  const [catalogsReady, setCatalogsReady] = useState(false)
+  const catalogsLoadedRef = useRef(false)
 
   useEffect(() => {
     setPage(1)
@@ -339,11 +339,11 @@ export function DrilldownSheet({
     })
 
     // Load catalogs in parallel (only if not already loaded)
-    const catalogReq = catalogsReady
+    const catalogReq = catalogsLoadedRef.current
       ? Promise.resolve(null)
       : Promise.all([
           api.get<CategoryDto[]>('/categories'),
-          api.get<CostCenterDto[]>('/cost-centers'),
+          api.get<CostCenterDto[]>('/costcenters'),
         ])
 
     Promise.all([drilldownReq, catalogReq])
@@ -351,7 +351,7 @@ export function DrilldownSheet({
         if (catalogRes) {
           setCategories(catalogRes[0].data)
           setCostCenters(catalogRes[1].data)
-          setCatalogsReady(true)
+          catalogsLoadedRef.current = true
         }
         setData(drilldownRes.data)
       })
