@@ -1,7 +1,9 @@
 using MyFO.Application;
 using MyFO.Infrastructure;
+using MyFO.Infrastructure.Persistence;
 using MyFO.API.Middleware;
 using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -40,6 +42,13 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 var app = builder.Build();
+
+// --- Auto-apply pending migrations on startup ---
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
+}
 
 // --- Middleware pipeline ---
 app.UseForwardedHeaders();
