@@ -12,7 +12,6 @@ public class StatementPeriod : TenantEntity
 {
     public Guid StatementPeriodId { get; set; }
     public Guid CreditCardId { get; set; }
-    public DateOnly PeriodStart { get; set; }
     public DateOnly PeriodEnd { get; set; }
     public DateOnly DueDate { get; set; }
     public PaymentStatus PaymentStatus { get; set; } = PaymentStatus.Unpaid;

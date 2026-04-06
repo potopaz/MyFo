@@ -20,6 +20,8 @@ public class CreditCardPayment : TenantEntity
     // Optional association to a statement period
     public Guid? StatementPeriodId { get; set; }
 
+    public bool IsReconciled { get; set; }
+
     // Exchange rates (for bimonetary support)
     public decimal PrimaryExchangeRate { get; set; } = 1;
     public decimal SecondaryExchangeRate { get; set; } = 1;

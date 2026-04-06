@@ -5,7 +5,6 @@ public class StatementPeriodDto
     public Guid StatementPeriodId { get; set; }
     public Guid CreditCardId { get; set; }
     public string CreditCardName { get; set; } = string.Empty;
-    public DateOnly PeriodStart { get; set; }
     public DateOnly PeriodEnd { get; set; }
     public DateOnly DueDate { get; set; }
     public string PaymentStatus { get; set; } = string.Empty;

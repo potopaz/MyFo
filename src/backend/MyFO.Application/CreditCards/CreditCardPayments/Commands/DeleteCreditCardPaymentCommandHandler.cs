@@ -31,6 +31,10 @@ public class DeleteCreditCardPaymentCommandHandler : IRequestHandler<DeleteCredi
                 && p.CreditCardPaymentId == request.CreditCardPaymentId, cancellationToken)
             ?? throw new NotFoundException("CreditCardPayment", request.CreditCardPaymentId);
 
+        if (payment.IsReconciled)
+            throw new DomainException("PAYMENT_RECONCILED",
+                "No se puede eliminar un pago de tarjeta conciliado.");
+
         // Load period if payment is associated to one
         StatementPeriod? period = null;
         if (payment.StatementPeriodId.HasValue)

@@ -16,7 +16,6 @@ public class StatementPeriodConfiguration : IEntityTypeConfiguration<StatementPe
         builder.Property(s => s.FamilyId).HasColumnName("family_id");
         builder.Property(s => s.StatementPeriodId).HasColumnName("statement_period_id").ValueGeneratedOnAdd();
         builder.Property(s => s.CreditCardId).HasColumnName("credit_card_id").IsRequired();
-        builder.Property(s => s.PeriodStart).HasColumnName("period_start").IsRequired();
         builder.Property(s => s.PeriodEnd).HasColumnName("period_end").IsRequired();
         builder.Property(s => s.DueDate).HasColumnName("due_date").IsRequired();
         builder.Property(s => s.PaymentStatus).HasColumnName("payment_status")

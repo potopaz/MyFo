@@ -145,7 +145,6 @@ public class GetStatementPeriodByIdQueryHandler : IRequestHandler<GetStatementPe
             StatementPeriodId = period.StatementPeriodId,
             CreditCardId = period.CreditCardId,
             CreditCardName = period.CreditCard.Name,
-            PeriodStart = period.PeriodStart,
             PeriodEnd = period.PeriodEnd,
             DueDate = period.DueDate,
             PaymentStatus = period.PaymentStatus.ToString(),

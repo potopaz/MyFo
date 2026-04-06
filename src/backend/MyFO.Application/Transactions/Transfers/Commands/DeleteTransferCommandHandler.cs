@@ -29,6 +29,10 @@ public class DeleteTransferCommandHandler : IRequestHandler<DeleteTransferComman
             .FirstOrDefaultAsync(t => t.FamilyId == familyId && t.TransferId == request.TransferId, cancellationToken)
             ?? throw new NotFoundException("Transfer", request.TransferId);
 
+        if (transfer.IsReconciled)
+            throw new DomainException("TRANSFER_RECONCILED",
+                "No se puede eliminar un traspaso conciliado.");
+
         // Apply state-based rules:
         // - PendingConfirmation: only creator can delete (no balance reversal needed)
         // - Confirmed + IsAutoConfirmed: allowed, reverse balance

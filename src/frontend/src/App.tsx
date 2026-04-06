@@ -23,6 +23,7 @@ import TransferFormPage from '@/pages/TransferFormPage'
 import StatementPeriodsPage from '@/pages/StatementPeriodsPage'
 import StatementPeriodFormPage from '@/pages/StatementPeriodFormPage'
 import CreditCardPaymentsPage from '@/pages/CreditCardPaymentsPage'
+import BankReconciliationPage from '@/pages/BankReconciliationPage'
 import AnalysisPage from '@/pages/AnalysisPage'
 import ChartsPrototypePage from '@/pages/ChartsPrototypePage'
 import IncomeExpensePage from '@/pages/reports/IncomeExpensePage'
@@ -132,6 +133,7 @@ export default function App() {
               <Route path="statements" element={<StatementPeriodsPage />} />
               <Route path="statements/:id/edit" element={<StatementPeriodFormPage />} />
               <Route path="cc-payments" element={<CreditCardPaymentsPage />} />
+              <Route path="reconciliation" element={<BankReconciliationPage />} />
               <Route path="settings" element={<FamilyAdminRoute><SettingsPage /></FamilyAdminRoute>} />
               <Route path="members" element={<Navigate to="/settings?tab=members" replace />} />
               <Route path="profile" element={<ProfilePage />} />

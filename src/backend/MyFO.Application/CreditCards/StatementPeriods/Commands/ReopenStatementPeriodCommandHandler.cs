@@ -42,7 +42,7 @@ public class ReopenStatementPeriodCommandHandler : IRequestHandler<ReopenStateme
         var hasNextPeriod = await _db.StatementPeriods
             .AnyAsync(sp => sp.FamilyId == familyId
                 && sp.CreditCardId == period.CreditCardId
-                && sp.PeriodStart > period.PeriodEnd
+                && sp.PeriodEnd > period.PeriodEnd
                 && sp.ClosedAt != null, cancellationToken);
 
         if (hasNextPeriod)
@@ -65,7 +65,6 @@ public class ReopenStatementPeriodCommandHandler : IRequestHandler<ReopenStateme
             StatementPeriodId = period.StatementPeriodId,
             CreditCardId = period.CreditCardId,
             CreditCardName = period.CreditCard.Name,
-            PeriodStart = period.PeriodStart,
             PeriodEnd = period.PeriodEnd,
             DueDate = period.DueDate,
             PaymentStatus = period.PaymentStatus.ToString(),

@@ -24,7 +24,6 @@ public class GetStatementPeriodsQueryHandler : IRequestHandler<GetStatementPerio
                     StatementPeriodId = sp.StatementPeriodId,
                     CreditCardId = sp.CreditCardId,
                     CreditCardName = cc.Name,
-                    PeriodStart = sp.PeriodStart,
                     PeriodEnd = sp.PeriodEnd,
                     DueDate = sp.DueDate,
                     PaymentStatus = sp.PaymentStatus.ToString(),

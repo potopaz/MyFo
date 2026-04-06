@@ -21,6 +21,7 @@ public class BankAccountConfiguration : IEntityTypeConfiguration<BankAccount>
         builder.Property(b => b.Cbu).HasColumnName("cbu").HasMaxLength(30);
         builder.Property(b => b.Alias).HasColumnName("alias").HasMaxLength(50);
         builder.Property(b => b.IsActive).HasColumnName("is_active").HasDefaultValue(true);
+        builder.Property(b => b.IsInitialBalanceReconciled).HasColumnName("is_initial_balance_reconciled").HasDefaultValue(false);
 
         builder.Property(b => b.CreatedAt).HasColumnName("created_at");
         builder.Property(b => b.CreatedBy).HasColumnName("created_by");

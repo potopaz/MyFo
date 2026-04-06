@@ -32,22 +32,18 @@ public class UpdateStatementPeriodDatesCommandHandler : IRequestHandler<UpdateSt
         if (period.ClosedAt != null)
             throw new DomainException("PERIOD_NOT_OPEN", "Solo se pueden editar periodos abiertos.");
 
-        if (request.PeriodEnd <= period.PeriodStart)
-            throw new DomainException("INVALID_PERIOD_DATES", "La fecha de cierre debe ser posterior a la de inicio.");
-
         if (request.DueDate < request.PeriodEnd)
             throw new DomainException("INVALID_DUE_DATE", "La fecha de vencimiento debe ser igual o posterior al cierre.");
 
-        // Check for overlapping periods (excluding self)
-        var hasOverlap = await _db.StatementPeriods
+        // Check no duplicate period end date (excluding self)
+        var hasDuplicate = await _db.StatementPeriods
             .AnyAsync(sp => sp.FamilyId == familyId
                 && sp.CreditCardId == period.CreditCardId
                 && sp.StatementPeriodId != period.StatementPeriodId
-                && sp.PeriodStart <= request.PeriodEnd
-                && sp.PeriodEnd >= period.PeriodStart, cancellationToken);
+                && sp.PeriodEnd == request.PeriodEnd, cancellationToken);
 
-        if (hasOverlap)
-            throw new DomainException("PERIOD_OVERLAP", "El periodo se superpone con uno existente.");
+        if (hasDuplicate)
+            throw new DomainException("PERIOD_OVERLAP", "Ya existe un periodo con esa fecha de cierre.");
 
         period.PeriodEnd = request.PeriodEnd;
         period.DueDate = request.DueDate;

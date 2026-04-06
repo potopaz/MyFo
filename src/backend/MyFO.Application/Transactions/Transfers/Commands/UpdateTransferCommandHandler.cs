@@ -36,6 +36,10 @@ public class UpdateTransferCommandHandler : IRequestHandler<UpdateTransferComman
             throw new ConflictException("CONCURRENT_MODIFICATION",
                 "La transferencia fue modificada por otro usuario. Recargá el formulario para ver los cambios actuales.");
 
+        if (transfer.IsReconciled)
+            throw new DomainException("TRANSFER_RECONCILED",
+                "No se puede modificar un traspaso conciliado.");
+
         // Only PendingConfirmation transfers can be edited, and only by the creator
         if (transfer.Status != TransferStatus.PendingConfirmation)
             throw new DomainException("INVALID_STATUS", "Solo se pueden editar transferencias en estado pendiente de confirmación.");

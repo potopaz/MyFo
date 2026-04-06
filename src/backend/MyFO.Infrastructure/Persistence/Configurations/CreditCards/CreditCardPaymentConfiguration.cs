@@ -21,6 +21,7 @@ public class CreditCardPaymentConfiguration : IEntityTypeConfiguration<CreditCar
         builder.Property(p => p.CashBoxId).HasColumnName("cash_box_id");
         builder.Property(p => p.BankAccountId).HasColumnName("bank_account_id");
         builder.Property(p => p.IsTotalPayment).HasColumnName("is_total_payment").IsRequired();
+        builder.Property(p => p.IsReconciled).HasColumnName("is_reconciled").HasDefaultValue(false);
         builder.Property(p => p.StatementPeriodId).HasColumnName("statement_period_id");
         builder.Property(p => p.PrimaryExchangeRate).HasColumnName("primary_exchange_rate").HasPrecision(18, 6).IsRequired();
         builder.Property(p => p.SecondaryExchangeRate).HasColumnName("secondary_exchange_rate").HasPrecision(18, 6).IsRequired();

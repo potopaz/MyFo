@@ -457,7 +457,7 @@ export default function CreditCardPaymentsPage() {
                     {form.statementPeriodId
                       ? (() => {
                           const sp = periods.find((p) => p.statementPeriodId === form.statementPeriodId)
-                          return sp ? `${formatDateDisplay(sp.periodStart)} - ${formatDateDisplay(sp.periodEnd)} (${fmt(sp.pendingBalance)})` : t('ccPayments.form.selectPeriod')
+                          return sp ? `${formatDateDisplay(sp.periodEnd)} (${fmt(sp.pendingBalance)})` : t('ccPayments.form.selectPeriod')
                         })()
                       : t('ccPayments.form.selectPeriod')}
                   </SelectValue></SelectTrigger>
@@ -465,7 +465,7 @@ export default function CreditCardPaymentsPage() {
                     <SelectItem value="_none_">{t('ccPayments.form.selectPeriod')}</SelectItem>
                     {periods.map((sp) => (
                       <SelectItem key={sp.statementPeriodId} value={sp.statementPeriodId}>
-                        {formatDateDisplay(sp.periodStart)} - {formatDateDisplay(sp.periodEnd)} ({fmt(sp.pendingBalance)})
+                        {formatDateDisplay(sp.periodEnd)} ({fmt(sp.pendingBalance)})
                       </SelectItem>
                     ))}
                   </SelectContent>

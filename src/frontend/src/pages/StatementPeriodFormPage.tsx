@@ -336,11 +336,7 @@ export default function StatementPeriodFormPage() {
       {/* Period info card */}
       <Card>
         <CardContent className="p-4 space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="space-y-1">
-              <Label className="text-xs text-muted-foreground">{t('statements.periodStart')}</Label>
-              <div className="text-sm font-medium">{formatDateDisplay(detail.periodStart)}</div>
-            </div>
+          <div className="grid grid-cols-2 gap-4">
             <div className="space-y-1">
               <Label className="text-xs text-muted-foreground">{t('statements.periodEnd')}</Label>
               {periodIsOpen ? (

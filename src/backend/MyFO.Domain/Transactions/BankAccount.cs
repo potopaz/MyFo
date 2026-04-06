@@ -17,4 +17,5 @@ public class BankAccount : TenantEntity
     public string? Cbu { get; set; }
     public string? Alias { get; set; }
     public bool IsActive { get; set; } = true;
+    public bool IsInitialBalanceReconciled { get; set; }
 }

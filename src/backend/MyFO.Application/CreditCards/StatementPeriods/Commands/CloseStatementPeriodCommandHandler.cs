@@ -43,6 +43,12 @@ public class CloseStatementPeriodCommandHandler : IRequestHandler<CloseStatement
                 && i.DeletedAt == null)
             .ToListAsync(cancellationToken);
 
+        // Validate period has content (included installments have StatementPeriodId set)
+        var hasLineItems = period.LineItems.Any(li => li.DeletedAt == null);
+
+        if (!installments.Any() && !hasLineItems)
+            throw new DomainException("EMPTY_PERIOD", "El periodo no tiene cuotas incluidas ni cargos/bonificaciones. Agregue contenido antes de cerrar.");
+
         // Freeze totals via helper
         await StatementPeriodTotalsHelper.Recalculate(_db, period, cancellationToken);
         period.ClosedAt = DateTime.UtcNow;
@@ -61,7 +67,6 @@ public class CloseStatementPeriodCommandHandler : IRequestHandler<CloseStatement
             StatementPeriodId = period.StatementPeriodId,
             CreditCardId = period.CreditCardId,
             CreditCardName = period.CreditCard.Name,
-            PeriodStart = period.PeriodStart,
             PeriodEnd = period.PeriodEnd,
             DueDate = period.DueDate,
             PaymentStatus = period.PaymentStatus.ToString(),

@@ -25,6 +25,7 @@ public class MovementPaymentConfiguration : IEntityTypeConfiguration<MovementPay
         builder.Property(p => p.CreditCardId).HasColumnName("credit_card_id");
         builder.Property(p => p.CreditCardMemberId).HasColumnName("credit_card_member_id");
         builder.Property(p => p.Installments).HasColumnName("installments");
+        builder.Property(p => p.IsReconciled).HasColumnName("is_reconciled").HasDefaultValue(false);
 
         // Credit card bonification fields
         builder.Property(p => p.BonificationType).HasColumnName("bonification_type")

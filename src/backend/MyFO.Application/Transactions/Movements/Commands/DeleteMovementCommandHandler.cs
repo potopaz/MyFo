@@ -30,6 +30,12 @@ public class DeleteMovementCommandHandler : IRequestHandler<DeleteMovementComman
             .FirstOrDefaultAsync(m => m.FamilyId == familyId && m.MovementId == request.MovementId, cancellationToken)
             ?? throw new NotFoundException("Movement", request.MovementId);
 
+        // Check if any bank payments are reconciled
+        var hasReconciledPayments = movement.Payments.Any(p => p.IsReconciled);
+        if (hasReconciledPayments)
+            throw new DomainException("PAYMENT_RECONCILED",
+                "No se puede eliminar el movimiento porque tiene pagos conciliados.");
+
         // Check if any CC payments have installments in closed statements
         var ccPaymentIds = movement.Payments
             .Where(p => p.PaymentMethodType == PaymentMethodType.CreditCard)

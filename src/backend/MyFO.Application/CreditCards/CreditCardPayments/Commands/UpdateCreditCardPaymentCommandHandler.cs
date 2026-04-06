@@ -38,6 +38,20 @@ public class UpdateCreditCardPaymentCommandHandler : IRequestHandler<UpdateCredi
         if (!creditCard.IsActive)
             throw new DomainException("INACTIVE_CREDIT_CARD", "La tarjeta de crédito está inactiva.");
 
+        if (payment.IsReconciled)
+        {
+            // Reconciled payments: only description and date can change
+            if (request.Amount != payment.Amount)
+                throw new DomainException("RECONCILED_AMOUNT_LOCKED",
+                    "No se puede cambiar el importe de un pago de tarjeta conciliado.");
+            if (request.BankAccountId != payment.BankAccountId)
+                throw new DomainException("RECONCILED_SOURCE_LOCKED",
+                    "No se puede cambiar el banco de un pago de tarjeta conciliado.");
+            if (request.CashBoxId != payment.CashBoxId)
+                throw new DomainException("RECONCILED_SOURCE_LOCKED",
+                    "No se puede cambiar la fuente de pago de un pago de tarjeta conciliado.");
+        }
+
         if (request.Amount <= 0)
             throw new DomainException("INVALID_AMOUNT", "El importe debe ser mayor a cero.");
         if (request.PrimaryExchangeRate <= 0)

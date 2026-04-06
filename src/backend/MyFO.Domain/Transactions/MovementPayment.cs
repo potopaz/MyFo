@@ -17,6 +17,8 @@ public class MovementPayment : TenantEntity
     public Guid? CreditCardMemberId { get; set; }
     public int? Installments { get; set; }
 
+    public bool IsReconciled { get; set; }
+
     // Credit card bonification fields
     public BonificationType? BonificationType { get; set; }
     public decimal? BonificationValue { get; set; }

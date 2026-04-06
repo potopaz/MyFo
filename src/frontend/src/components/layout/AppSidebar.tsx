@@ -30,6 +30,7 @@ import {
   // TrendingUp,  // TODO: re-enable after polish
   Layers,
   // Building2,  // TODO: re-enable after polish
+  CheckCircle2,
 } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 
@@ -51,6 +52,7 @@ export function AppSidebar() {
     { title: t('nav.transfers'), url: '/transfers', icon: ArrowLeftRight },
     { title: t('nav.statements'), url: '/statements', icon: FileText },
     { title: t('nav.ccPayments'), url: '/cc-payments', icon: Banknote },
+    { title: t('nav.bankReconciliation'), url: '/reconciliation', icon: CheckCircle2 },
   ]
 
   const configItems: MenuItem[] = [

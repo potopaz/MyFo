@@ -171,7 +171,6 @@ export interface StatementPeriodDto {
   statementPeriodId: string
   creditCardId: string
   creditCardName: string
-  periodStart: string
   periodEnd: string
   dueDate: string
   paymentStatus: string
@@ -579,4 +578,26 @@ export interface DrilldownResultDto {
   totalAmount: number
   netAmount: number
   items: DrilldownMovementDto[]
+}
+
+// ── Bank Reconciliation DTOs ──────────────────────────────────────────────────
+
+export interface BankReconciliationItemDto {
+  /** InitialBalance | MovementPayment | Transfer | CreditCardPayment */
+  type: string
+  id: string
+  date: string | null
+  description: string
+  credit: number | null
+  debit: number | null
+  isReconciled: boolean
+  isOutsideDateRange: boolean
+}
+
+export interface BankReconciliationDto {
+  bankAccountId: string
+  bankAccountName: string
+  currencyCode: string
+  previousReconciledBalance: number
+  items: BankReconciliationItemDto[]
 }

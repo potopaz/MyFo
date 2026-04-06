@@ -35,6 +35,7 @@ public class TransferConfiguration : IEntityTypeConfiguration<Transfer>
         builder.Property(t => t.Status).HasColumnName("status");
         builder.Property(t => t.IsAutoConfirmed).HasColumnName("is_auto_confirmed");
         builder.Property(t => t.RejectionComment).HasColumnName("rejection_comment");
+        builder.Property(t => t.IsReconciled).HasColumnName("is_reconciled").HasDefaultValue(false);
         builder.Property(t => t.RowVersion).HasColumnName("row_version").HasDefaultValue(1);
 
         builder.Property(t => t.CreatedAt).HasColumnName("created_at");

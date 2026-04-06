@@ -45,6 +45,20 @@ public class UpdateMovementCommandHandler : IRequestHandler<UpdateMovementComman
             .FirstOrDefaultAsync(f => f.FamilyId == familyId && f.DeletedAt == null, cancellationToken)
             ?? throw new NotFoundException("Family", familyId);
 
+        // --- Identify reconciled bank payments (locked for key fields) ---
+        var reconciledBankPaymentIds = movement.Payments
+            .Where(p => p.IsReconciled)
+            .Select(p => p.MovementPaymentId)
+            .ToHashSet();
+
+        if (reconciledBankPaymentIds.Count > 0)
+        {
+            // Currency cannot change if any bank payment is reconciled
+            if (request.CurrencyCode.ToUpperInvariant() != movement.CurrencyCode)
+                throw new DomainException("RECONCILED_PAYMENT_CURRENCY_LOCKED",
+                    "No se puede cambiar la moneda porque hay pagos bancarios conciliados.");
+        }
+
         // --- Identify locked payments early (needed before balance reversal) ---
         var allOldCcPaymentIds = movement.Payments
             .Where(p => p.PaymentMethodType == PaymentMethodType.CreditCard)
@@ -263,6 +277,23 @@ public class UpdateMovementCommandHandler : IRequestHandler<UpdateMovementComman
         var paymentSum = request.Payments.Sum(p => p.Amount);
         if (paymentSum != request.Amount)
             throw new DomainException("PAYMENT_SUM_MISMATCH", $"La suma de pagos ({paymentSum}) no coincide con el importe del movimiento ({request.Amount}).");
+
+        // Validate reconciled bank payments are preserved unchanged in the request
+        foreach (var reconciledId in reconciledBankPaymentIds)
+        {
+            var oldPayment = movement.Payments.First(p => p.MovementPaymentId == reconciledId);
+            var matchingNew = request.Payments.FirstOrDefault(p => p.MovementPaymentId == reconciledId);
+
+            if (matchingNew is null)
+                throw new DomainException("RECONCILED_PAYMENT_REMOVED",
+                    "No se puede eliminar un pago bancario conciliado.");
+
+            if (matchingNew.Amount != oldPayment.Amount
+                || matchingNew.BankAccountId != oldPayment.BankAccountId
+                || matchingNew.PaymentMethodType.ToUpperInvariant() != oldPayment.PaymentMethodType.ToString().ToUpperInvariant())
+                throw new DomainException("RECONCILED_PAYMENT_MODIFIED",
+                    "No se puede modificar el importe, banco ni tipo de pago de un pago bancario conciliado.");
+        }
 
         // Validate locked payments are preserved unchanged in the request
         foreach (var lockedId in lockedPaymentIds)

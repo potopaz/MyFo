@@ -72,7 +72,8 @@
     "admin": "Administración",
     "members": "Miembros",
     "superAdmin": "Super Admin",
-    "adminFamilies": "Familias"
+    "adminFamilies": "Familias",
+    "bankReconciliation": "Conciliación Bancaria"
   },
   "header": {
     "search": "Buscar...",
@@ -833,7 +834,7 @@
     "filterStatus": "Estado",
     "columns": {
       "card": "Tarjeta",
-      "period": "Periodo",
+      "period": "Fecha de Cierre",
       "dueDate": "Vencimiento",
       "status": "Estado",
       "total": "Total",

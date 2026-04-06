@@ -28,6 +28,7 @@ public class Transfer : TenantEntity
     public TransferStatus Status { get; set; } = TransferStatus.Confirmed;
     public bool IsAutoConfirmed { get; set; } = true;
     public string? RejectionComment { get; set; }
+    public bool IsReconciled { get; set; }
 
     public CashBox? FromCashBox { get; set; }
     public BankAccount? FromBankAccount { get; set; }

@@ -30,6 +30,10 @@ public class UpdateBankAccountCommandHandler : IRequestHandler<UpdateBankAccount
         if (entity is null)
             throw new NotFoundException("BankAccount", request.BankAccountId);
 
+        if (entity.IsInitialBalanceReconciled && request.InitialBalance != entity.InitialBalance)
+            throw new DomainException("INITIAL_BALANCE_RECONCILED",
+                "No se puede cambiar el saldo inicial porque está conciliado.");
+
         if (entity.CurrencyCode != request.CurrencyCode)
         {
             var hasMovements = await _db.MovementPayments

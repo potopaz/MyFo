@@ -88,7 +88,7 @@ export default function StatementPeriodsPage() {
 
   const [createOpen, setCreateOpen] = useState(false)
   const [createCardId, setCreateCardId] = useState('')
-  const [createForm, setCreateForm] = useState({ periodStart: '', periodEnd: '', dueDate: '' })
+  const [createForm, setCreateForm] = useState({ periodEnd: '', dueDate: '' })
   const [saving, setSaving] = useState(false)
 
   const [deletePeriodId, setDeletePeriodId] = useState<string | null>(null)
@@ -116,7 +116,7 @@ export default function StatementPeriodsPage() {
 
   const createPeriod = async () => {
     if (!createCardId) { toast.error(t('statements.selectCardFirst')); return }
-    if (!createForm.periodStart || !createForm.periodEnd || !createForm.dueDate) {
+    if (!createForm.periodEnd || !createForm.dueDate) {
       toast.error(t('statements.toast.datesRequired'))
       return
     }
@@ -124,13 +124,12 @@ export default function StatementPeriodsPage() {
     try {
       const { data } = await api.post<StatementPeriodDto>('/statementperiods', {
         creditCardId: createCardId,
-        periodStart: createForm.periodStart,
         periodEnd: createForm.periodEnd,
         dueDate: createForm.dueDate,
       })
       toast.success(t('statements.toast.periodCreated'))
       setCreateOpen(false)
-      setCreateForm({ periodStart: '', periodEnd: '', dueDate: '' })
+      setCreateForm({ periodEnd: '', dueDate: '' })
       setCreateCardId('')
       navigate(`/statements/${data.statementPeriodId}/edit`)
     } catch (err) {
@@ -173,7 +172,7 @@ export default function StatementPeriodsPage() {
         <h1 className="text-2xl font-bold">{t('statements.pageTitle')}</h1>
         <Button onClick={() => {
           setCreateCardId(filterCardId !== '_all_' ? filterCardId : '')
-          setCreateForm({ periodStart: '', periodEnd: '', dueDate: '' })
+          setCreateForm({ periodEnd: '', dueDate: '' })
           setCreateOpen(true)
         }}>
           <Plus className="mr-2 h-4 w-4" /> {t('statements.newPeriod')}
@@ -237,9 +236,7 @@ export default function StatementPeriodsPage() {
               {periods.map((p) => (
                 <TableRow key={p.statementPeriodId}>
                   <TableCell className="font-medium">{p.creditCardName}</TableCell>
-                  <TableCell>
-                    {formatDateDisplay(p.periodStart)} — {formatDateDisplay(p.periodEnd)}
-                  </TableCell>
+                  <TableCell>{formatDateDisplay(p.periodEnd)}</TableCell>
                   <TableCell>{formatDateDisplay(p.dueDate)}</TableCell>
                   <TableCell>{periodStatusBadge(p, t)}</TableCell>
                   <TableCell className="text-right tabular-nums">
@@ -293,14 +290,6 @@ export default function StatementPeriodsPage() {
                   ))}
                 </SelectContent>
               </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label>{t('statements.periodStart')}</Label>
-              <Input
-                type="date"
-                value={createForm.periodStart}
-                onChange={(e) => setCreateForm((p) => ({ ...p, periodStart: e.target.value }))}
-              />
             </div>
             <div className="space-y-1.5">
               <Label>{t('statements.periodEnd')}</Label>
