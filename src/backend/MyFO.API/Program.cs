@@ -2,8 +2,10 @@ using MyFO.Application;
 using MyFO.Infrastructure;
 using MyFO.Infrastructure.Persistence;
 using MyFO.API.Middleware;
+using MyFO.Domain.Interfaces.Services;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -44,9 +46,18 @@ builder.Services.AddSwaggerGen();
 var app = builder.Build();
 
 // --- Auto-apply pending migrations on startup ---
+// Uses DefaultConnection (postgres superuser) for DDL — myfo_app lacks DDL permissions.
+// This temporary context is only used to run migrations; runtime uses the registered ApplicationDbContext with RLS.
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    var configuration = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+    var connectionString = configuration.GetConnectionString("DefaultConnection")
+                        ?? configuration.GetConnectionString("AppConnection")!;
+    var options = new DbContextOptionsBuilder<ApplicationDbContext>()
+        .UseNpgsql(connectionString)
+        .Options;
+    var currentUser = scope.ServiceProvider.GetRequiredService<ICurrentUserService>();
+    using var db = new ApplicationDbContext(options, currentUser);
     db.Database.Migrate();
 }
 
