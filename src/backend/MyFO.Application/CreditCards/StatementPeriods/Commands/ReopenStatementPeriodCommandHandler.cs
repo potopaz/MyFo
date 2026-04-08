@@ -38,14 +38,23 @@ public class ReopenStatementPeriodCommandHandler : IRequestHandler<ReopenStateme
         if (period.PaymentStatus != PaymentStatus.Unpaid)
             throw new DomainException("PERIOD_HAS_PAYMENTS", "No se puede reabrir un periodo con pagos registrados.");
 
-        // Check no subsequent closed period exists
-        var hasNextPeriod = await _db.StatementPeriods
+        // Check no subsequent period exists (open or closed)
+        var nextOpenPeriod = await _db.StatementPeriods
+            .AnyAsync(sp => sp.FamilyId == familyId
+                && sp.CreditCardId == period.CreditCardId
+                && sp.PeriodEnd > period.PeriodEnd
+                && sp.ClosedAt == null, cancellationToken);
+
+        if (nextOpenPeriod)
+            throw new DomainException("NEXT_PERIOD_OPEN", "No se puede reabrir porque existe un periodo posterior abierto.");
+
+        var nextClosedPeriod = await _db.StatementPeriods
             .AnyAsync(sp => sp.FamilyId == familyId
                 && sp.CreditCardId == period.CreditCardId
                 && sp.PeriodEnd > period.PeriodEnd
                 && sp.ClosedAt != null, cancellationToken);
 
-        if (hasNextPeriod)
+        if (nextClosedPeriod)
             throw new DomainException("NEXT_PERIOD_CLOSED", "No se puede reabrir porque existe un periodo posterior ya cerrado.");
 
         // Keep installments assigned (user already curated the selection)

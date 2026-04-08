@@ -88,6 +88,7 @@ export default function CreditCardPaymentsPage() {
 
   // Edit
   const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null)
+  const [editingIsReconciled, setEditingIsReconciled] = useState(false)
 
   // Delete
   const [deleteId, setDeleteId] = useState<string | null>(null)
@@ -126,11 +127,14 @@ export default function CreditCardPaymentsPage() {
       setPeriods([])
       return
     }
+    const currentPeriodId = form.statementPeriodId
     api.get<StatementPeriodDto[]>('/statementperiods', {
       params: { creditCardId: form.creditCardId },
     }).then((r) => {
-      // Show closed periods that are not fully paid
-      setPeriods(r.data.filter((p) => p.closedAt != null && p.paymentStatus !== 'FullyPaid'))
+      // Show closed periods not fully paid, plus the currently selected one (for edit view)
+      setPeriods(r.data.filter((p) =>
+        p.closedAt != null && (p.paymentStatus !== 'FullyPaid' || p.statementPeriodId === currentPeriodId)
+      ))
     }).catch(() => setPeriods([]))
   }, [createOpen, form.creditCardId])
 
@@ -172,6 +176,7 @@ export default function CreditCardPaymentsPage() {
 
   const openEdit = (p: CreditCardPaymentDto) => {
     setEditingPaymentId(p.creditCardPaymentId)
+    setEditingIsReconciled(p.isReconciled)
     setForm({
       creditCardId: p.creditCardId,
       paymentDate: p.paymentDate,
@@ -255,16 +260,8 @@ export default function CreditCardPaymentsPage() {
   const filteredCashBoxes = cashBoxes.filter((cb) => cb.currencyCode === cardCurrency && (cb.isActive !== false || cb.value === form.cashBoxId))
   const filteredBankAccounts = bankAccounts.filter((ba) => ba.currencyCode === cardCurrency && (ba.isActive !== false || ba.value === form.bankAccountId))
 
-  // Exchange rate logic (same as MovementFormPage)
   const primaryCurrency = familySettings?.primaryCurrencyCode ?? ''
   const secondaryCurrency = familySettings?.secondaryCurrencyCode ?? ''
-  const getExchangeRateState = () => {
-    if (!cardCurrency) return { show: false, lockPrimary: false, lockSecondary: false }
-    if (cardCurrency === primaryCurrency) return { show: true, lockPrimary: true, lockSecondary: false }
-    if (cardCurrency === secondaryCurrency) return { show: true, lockPrimary: false, lockSecondary: true }
-    return { show: true, lockPrimary: false, lockSecondary: false }
-  }
-  const erState = getExchangeRateState()
 
   return (
     <div className="space-y-4">
@@ -368,7 +365,7 @@ export default function CreditCardPaymentsPage() {
       {/* Create drawer */}
       <Sheet open={createOpen} onOpenChange={(open) => {
         setCreateOpen(open)
-        if (!open) setEditingPaymentId(null)
+        if (!open) { setEditingPaymentId(null); setEditingIsReconciled(false) }
       }}>
         <SheetContent side="right" className="flex flex-col sm:max-w-md">
           <SheetHeader>
@@ -422,6 +419,7 @@ export default function CreditCardPaymentsPage() {
               <Checkbox
                 id="isTotalPayment"
                 checked={form.isTotalPayment}
+                disabled={editingIsReconciled}
                 onCheckedChange={(v) => {
                   const isTotal = !!v
                   setForm((p) => {
@@ -434,13 +432,14 @@ export default function CreditCardPaymentsPage() {
                   })
                 }}
               />
-              <Label htmlFor="isTotalPayment">{t('ccPayments.form.isTotalPayment')}</Label>
+              <Label htmlFor="isTotalPayment" className={editingIsReconciled ? 'text-muted-foreground' : ''}>{t('ccPayments.form.isTotalPayment')}</Label>
             </div>
             {form.creditCardId && (
               <div className="space-y-1.5">
                 <Label>{t('ccPayments.form.statementPeriod')}</Label>
                 <Select
                   value={form.statementPeriodId}
+                  disabled={editingIsReconciled && form.isTotalPayment}
                   onValueChange={(v) => {
                     const selectedId = v === '_none_' ? '' : v
                     const selectedPeriod = periods.find((p) => p.statementPeriodId === selectedId)
@@ -477,87 +476,63 @@ export default function CreditCardPaymentsPage() {
             )}
             <div className="space-y-1.5">
               <Label>{t('ccPayments.form.paymentSource')}</Label>
-              <Select
-                value={form.paymentSource}
-                onValueChange={(v) => setForm((p) => ({
-                  ...p,
-                  paymentSource: v as 'CashBox' | 'BankAccount',
-                  cashBoxId: '', bankAccountId: '',
-                }))}
-              >
-                <SelectTrigger><SelectValue>
-                  {form.paymentSource === 'CashBox' ? t('ccPayments.form.fromCashBox') : t('ccPayments.form.fromBank')}
-                </SelectValue></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="CashBox">{t('ccPayments.form.fromCashBox')}</SelectItem>
-                  <SelectItem value="BankAccount">{t('ccPayments.form.fromBank')}</SelectItem>
-                </SelectContent>
-              </Select>
+              <div className="grid grid-cols-2 gap-2">
+                <Select
+                  value={form.paymentSource}
+                  disabled={editingIsReconciled}
+                  onValueChange={(v) => setForm((p) => ({
+                    ...p,
+                    paymentSource: v as 'CashBox' | 'BankAccount',
+                    cashBoxId: '', bankAccountId: '',
+                  }))}
+                >
+                  <SelectTrigger><SelectValue>
+                    {form.paymentSource === 'CashBox' ? t('ccPayments.form.fromCashBox') : t('ccPayments.form.fromBank')}
+                  </SelectValue></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="CashBox">{t('ccPayments.form.fromCashBox')}</SelectItem>
+                    <SelectItem value="BankAccount">{t('ccPayments.form.fromBank')}</SelectItem>
+                  </SelectContent>
+                </Select>
+                {form.paymentSource === 'CashBox' ? (
+                  <Select value={form.cashBoxId} disabled={editingIsReconciled} onValueChange={(v) => setForm((p) => ({ ...p, cashBoxId: v }))}>
+                    <SelectTrigger><SelectValue>
+                      {filteredCashBoxes.find((cb) => cb.value === form.cashBoxId)?.label ?? t('ccPayments.form.selectCashBox')}
+                    </SelectValue></SelectTrigger>
+                    <SelectContent>
+                      {filteredCashBoxes.map((cb) => (
+                        <SelectItem key={cb.value} value={cb.value}>{cb.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Select value={form.bankAccountId} disabled={editingIsReconciled} onValueChange={(v) => setForm((p) => ({ ...p, bankAccountId: v }))}>
+                    <SelectTrigger><SelectValue>
+                      {filteredBankAccounts.find((ba) => ba.value === form.bankAccountId)?.label ?? t('ccPayments.form.selectBank')}
+                    </SelectValue></SelectTrigger>
+                    <SelectContent>
+                      {filteredBankAccounts.map((ba) => (
+                        <SelectItem key={ba.value} value={ba.value}>{ba.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
             </div>
-            {form.paymentSource === 'CashBox' && (
-              <div className="space-y-1.5">
-                <Label>{t('ccPayments.form.selectCashBox')}</Label>
-                <Select value={form.cashBoxId} onValueChange={(v) => setForm((p) => ({ ...p, cashBoxId: v }))}>
-                  <SelectTrigger><SelectValue>
-                    {filteredCashBoxes.find((cb) => cb.value === form.cashBoxId)?.label ?? t('ccPayments.form.selectCashBox')}
-                  </SelectValue></SelectTrigger>
-                  <SelectContent>
-                    {filteredCashBoxes.map((cb) => (
-                      <SelectItem key={cb.value} value={cb.value}>{cb.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
-            {form.paymentSource === 'BankAccount' && (
-              <div className="space-y-1.5">
-                <Label>{t('ccPayments.form.selectBank')}</Label>
-                <Select value={form.bankAccountId} onValueChange={(v) => setForm((p) => ({ ...p, bankAccountId: v }))}>
-                  <SelectTrigger><SelectValue>
-                    {filteredBankAccounts.find((ba) => ba.value === form.bankAccountId)?.label ?? t('ccPayments.form.selectBank')}
-                  </SelectValue></SelectTrigger>
-                  <SelectContent>
-                    {filteredBankAccounts.map((ba) => (
-                      <SelectItem key={ba.value} value={ba.value}>{ba.label}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
             <div className="space-y-1.5">
               <Label>{t('ccPayments.form.amount')}</Label>
-              <AmountInput
-                value={form.amount}
-                onChange={(v) => setForm((p) => ({ ...p, amount: v }))}
-                maxDecimals={2}
-                disabled={form.isTotalPayment && !!form.statementPeriodId}
-              />
+              <div className="max-w-40">
+                <AmountInput
+                  value={form.amount}
+                  onChange={(v) => setForm((p) => ({ ...p, amount: v }))}
+                  maxDecimals={2}
+                  disabled={form.isTotalPayment && !!form.statementPeriodId}
+                />
+              </div>
               {form.isTotalPayment && form.statementPeriodId && (
                 <p className="text-xs text-muted-foreground">{t('ccPayments.form.totalPaymentHint')}</p>
               )}
             </div>
-            {erState.show && (
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label>{t('ccPayments.form.primaryExchangeRate')}</Label>
-                  <AmountInput
-                    value={form.primaryExchangeRate}
-                    onChange={(v) => setForm((p) => ({ ...p, primaryExchangeRate: v }))}
-                    maxDecimals={6}
-                    disabled={erState.lockPrimary}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>{t('ccPayments.form.secondaryExchangeRate')}</Label>
-                  <AmountInput
-                    value={form.secondaryExchangeRate}
-                    onChange={(v) => setForm((p) => ({ ...p, secondaryExchangeRate: v }))}
-                    maxDecimals={6}
-                    disabled={erState.lockSecondary}
-                  />
-                </div>
-              </div>
-            )}
           </div>
           <SheetFooter className="flex-row gap-2 border-t pt-4">
             <SheetClose render={<Button variant="outline" className="flex-1" />}>

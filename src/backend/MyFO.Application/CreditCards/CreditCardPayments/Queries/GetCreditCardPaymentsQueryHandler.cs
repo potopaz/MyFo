@@ -54,6 +54,7 @@ public class GetCreditCardPaymentsQueryHandler : IRequestHandler<GetCreditCardPa
             IsTotalPayment = p.IsTotalPayment,
             StatementPeriodId = p.StatementPeriodId,
             IsPeriodClosed = p.StatementPeriod != null && p.StatementPeriod.ClosedAt != null,
+            IsReconciled = p.IsReconciled,
             PrimaryExchangeRate = p.PrimaryExchangeRate,
             SecondaryExchangeRate = p.SecondaryExchangeRate,
             AmountInPrimary = p.AmountInPrimary,

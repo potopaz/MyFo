@@ -50,6 +50,12 @@ public class UpdateCreditCardPaymentCommandHandler : IRequestHandler<UpdateCredi
             if (request.CashBoxId != payment.CashBoxId)
                 throw new DomainException("RECONCILED_SOURCE_LOCKED",
                     "No se puede cambiar la fuente de pago de un pago de tarjeta conciliado.");
+            if (request.IsTotalPayment != payment.IsTotalPayment)
+                throw new DomainException("RECONCILED_TYPE_LOCKED",
+                    "No se puede cambiar el tipo de pago de un pago de tarjeta conciliado.");
+            if (payment.IsTotalPayment && request.StatementPeriodId != payment.StatementPeriodId)
+                throw new DomainException("RECONCILED_PERIOD_LOCKED",
+                    "No se puede cambiar el período de liquidación de un pago total conciliado.");
         }
 
         if (request.Amount <= 0)

@@ -228,6 +228,7 @@ export interface CreditCardPaymentDto {
   isTotalPayment: boolean
   statementPeriodId: string | null
   isPeriodClosed: boolean
+  isReconciled: boolean
   primaryExchangeRate: number
   secondaryExchangeRate: number
   amountInPrimary: number
